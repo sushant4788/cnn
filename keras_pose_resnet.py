@@ -2,6 +2,7 @@ from __future__ import print_function
 #from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Model
 from keras.layers import Dense, Activation, Flatten
+from keras.layers import Dropout
 from keras.utils import np_utils
 from keras.callbacks import ReduceLROnPlateau, CSVLogger, EarlyStopping
 from keras.callbacks import TensorBoard
@@ -12,6 +13,7 @@ from keras import optimizers
 import keras.backend as K
 import tensorflow as tf
 import numpy as np
+import gc
 
 # Set some hardcoded sizes
 img_rows ,img_cols, img_channels = 224, 224, 3
@@ -20,40 +22,22 @@ training_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_train_mod.tx
 testing_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_test_mod.txt'
 dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
 
-batch_size = 16
-num_epochs = 4
-def custom_loss(y_pred, y_truth):
-    # ============================================================
-    # Define the mean squared error :
-    def mean_squared_error(y_true, y_pred):
-        return K.mean(K.square(y_pred - y_true), axis=-1)
-    # ============================================================
-    beta_val = 100
-    # ============================================================
-    # seperate the first 3 elems
-    pos_pred = y_pred[:3]
-    #print('pos pred ', K.eval(pos_pred))
-    rot_pred = y_pred[3:]
-    pos_truth = y_truth[:3]
-    rot_truth = y_truth[3:]
-    beta = tf.constant(beta_val, dtype='float32',name='beta')
-    pos_loss = mean_squared_error(pos_truth, pos_pred)
-    #print('pos_loss : \n', K.eval(pos_loss))
-    #print(pos_loss)
-    rot_loss = mean_squared_error(rot_truth, rot_pred)
-    #print(rot_loss)
-    #print('rot_loss : \n', K.eval(rot_loss))
-    #print(K.eval(beta*rot_loss))
-    return(pos_loss + beta*rot_loss)
+batch_size = 1
+num_epochs = 20
 
+#num_samples = 20
 def process_dataset(filename):
     with open(filename) as f:
         lines = f.readlines()
+    # ============================
+    num_samples = len(lines)
+    #=============================
     lines = [x.strip('\n') for x in lines]
-    pose = np.zeros((len(lines), 7), dtype='float32')
-    print(pose.shape)
+    pose = np.zeros((num_samples, 7), dtype='float32')
+    #print(pose.shape)
     img_list = []
-    for i in range(0, len(lines)):
+    #for i in range(0, len(lines)):
+    for i in range(0, num_samples):
         line_splits = lines[i].split(' ')
         img_list.append(line_splits[0])
         l_pose = []
@@ -68,6 +52,7 @@ def process_dataset(filename):
 def read_images(img_list):
     imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels))
     for i in range(0, len(img_list)):
+    #for i in range(0, 1):
         loc = dataset_location + img_list[i]
         print(loc)
         im = Image.open(loc)
@@ -90,38 +75,30 @@ def main():
     testing_pose = testing_pose.astype('float32')
     train_imgs = read_images(training_img_list)
     test_imgs = read_images(testing_img_list)
-
     train_imgs = train_imgs.astype('float32')
     test_imgs = test_imgs.astype('float32')
     train_imgs /= 255
     test_imgs /= 255
+
+    tr_tx =training_pose[:,:3]
+    tr_rt =training_pose[:,3:]
+
     # import the resnet model
     base_model = ResNet50(weights='imagenet')
     x = base_model.output
-    x = Dense(32, activation='relu')(x)
-    pred = Dense(7,activation='relu')(x)
-    model = Model(input=base_model.input, output=pred)
+    x = Dropout(0.7)(x)
+    x = Dense(1024, activation='tanh')(x)
+    position = Dense(3, activation='tanh', name='translation')(x)
+    rotation = Dense(4, activation='tanh', name='rotation')(x)
+
+    model = Model(input=base_model.input, output=[position, rotation])
     print(model.summary())
     sgd = optimizers.SGD(lr = 0.00001, decay=1e-6, momentum=0.9, nesterov = True)
-    model.compile(optimizer='SGD', loss=custom_loss, metrics=['accuracy'])
-    tb = TensorBoard(log_dir='./logs_feature_detector_with_val', histogram_freq=1,
+    model.compile(optimizer='SGD', loss='mse', loss_weights =[1.0, 500.0])
+    tb = TensorBoard(log_dir='./sample_log', histogram_freq=1,
     write_graph=True, write_images=True)
-    model.fit(train_imgs, training_pose, batch_size = batch_size, nb_epoch= num_epochs,validation_data= (test_imgs, testing_pose), callbacks= [tb], shuffle=True)
-
+    model.fit(train_imgs, [tr_tx, tr_rt], batch_size = batch_size,
+    epochs= num_epochs, callbacks= [tb], shuffle=True)
+    gc.collect()
 if __name__ == '__main__':
     main()
-'''
-LEGACY CUSTOM LOSS
-def mean_squared_error(y_true, y_pred):
-    return K.mean(K.square(y_pred - y_true), axis=-1)
-
-def custom_loss(y_pred, y_truth):
-    # seperate the first 3 elems
-    pos_pred = y_pred[:3]
-    rot_pred = y_pred[3:]
-    pos_truth = y_truth[:3]
-    rot_truth = y_truth[3:]
-    beta = K.constant(100, dtype='float32',name='beta')
-    pos_loss = mean_squared_error(pos_truth, pos_pred)
-    rot_loss = mean_squared_error(rot_truth, rot_pred)
-    return(pos_loss + beta*rot_loss)'''
