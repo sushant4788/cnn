@@ -25,12 +25,12 @@ dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
 batch_size = 1
 num_epochs = 20
 
-#num_samples = 20
+num_samples = 20
 def process_dataset(filename):
     with open(filename) as f:
         lines = f.readlines()
     # ============================
-    num_samples = len(lines)
+    #num_samples = len(lines)
     #=============================
     lines = [x.strip('\n') for x in lines]
     pose = np.zeros((num_samples, 7), dtype='float32')
@@ -82,6 +82,8 @@ def main():
 
     tr_tx =training_pose[:,:3]
     tr_rt =training_pose[:,3:]
+    ts_tx =testing_pose[:,:3]
+    ts_rt =testing_pose[:,3:]
 
     # import the resnet model
     base_model = ResNet50(weights='imagenet')
@@ -93,12 +95,18 @@ def main():
 
     model = Model(input=base_model.input, output=[position, rotation])
     print(model.summary())
+
     sgd = optimizers.SGD(lr = 0.00001, decay=1e-6, momentum=0.9, nesterov = True)
     model.compile(optimizer='SGD', loss='mse', loss_weights =[1.0, 500.0])
+
     tb = TensorBoard(log_dir='./sample_log', histogram_freq=1,
     write_graph=True, write_images=True)
+
     model.fit(train_imgs, [tr_tx, tr_rt], batch_size = batch_size,
-    epochs= num_epochs, callbacks= [tb], shuffle=True)
+    epochs= num_epochs, validation_split = 0.1, callbacks= [tb], shuffle=True)
+
+    ts_pos_pred, ts_rot_pred = model.predict(test_imgs,[ts_tx, tx_tr], verbose=1,
+    batch_size=batch_size)
     gc.collect()
 if __name__ == '__main__':
     main()
