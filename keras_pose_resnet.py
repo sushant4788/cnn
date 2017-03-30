@@ -28,6 +28,16 @@ base_dir ='/home/sushant/Downloads/Kings/'
 batch_size = 20
 num_epochs = 2
 
+def create_dummy_ds():
+    # Creates a dummy ds for quick evaluation
+    train_imgs =    np.random.random((100, 224, 224, 3)) # 100 images r,c, channels
+    train_pose_tx = np.random.random((100, 3)) # tx, ty, tz
+    train_pose_rt = np.random.random((100, 4)) # w, p, q, r quarternion
+    test_imgs =     np.random.random((100, 224, 224, 3))
+    test_pose_tx =  np.random.random((100, 3)) # tx, ty,
+    test_pose_rt=   np.random.random((100, 4)) # w, p, q
+    return(train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,
+    test_pose_rt)
 #num_samples = 20
 def process_dataset(filename):
     with open(filename) as f:

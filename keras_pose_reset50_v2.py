@@ -20,16 +20,21 @@ import glob, os
 import keras_pose_resnet
 # Parmas for training
 batch_size = 20
-num_epochs = 60
+num_epochs = 5
 
 img_rows, img_cols, img_channels = 224, 224, 3
 base_dir = '/home/sushant/Downloads/Kings/'
 
+use_dummy_ds = False
 def main():
     # read the images
-    train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx, test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir )
+    if(use_dummy_ds == True):
+        print('Using dummy ds')
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx, test_pose_rt=keras_pose_resnet.create_dummy_ds()
+    else:
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir )
 
-    base_model = ResNet50(weights ='imagenet')
+    base_model = ResNet50()
     # the output of the last layer of the resnet
     y = base_model.get_layer('activation_5').output
     y = Flatten()(y)
@@ -43,14 +48,15 @@ def main():
     model = Model(input = base_model.input, output=[int_position, int_rotation,
     final_position, final_rotation])
 
-    print(model.summary())
+    #print(model.summary())
     model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.5, 250.0, 1.0, 500.0])
 
     model.fit(train_imgs, [train_pose_tx, train_pose_rt, train_pose_tx,
     train_pose_rt], batch_size= batch_size, epochs = num_epochs, shuffle=True)
 
     model.save('pose_resnet_v2.h5')
-    ts_pos_pred, ts_rot_pred = model.predict(test_imgs)
+    ts_pos_pred, ts_rot_pred, c1, c2 = model.predict(test_imgs)
+    print(ts_pos_pred)
 
 if __name__ == '__main__':
     main()
