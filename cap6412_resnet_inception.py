@@ -14,6 +14,7 @@ from keras.utils.data_utils import get_file
 from imagenet_utils import decode_predictions, preprocess_input
 from keras.callbacks import TensorBoard
 
+import gc
 import keras.backend as K
 import keras_pose_resnet
 
@@ -111,49 +112,32 @@ def inc_pose_net():
     x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
     x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
 
-    '''tower_1 = Conv2D(64, (1, 1), padding='same', activation='relu', name= 'inc_tower_1_1')(x)
-    tower_1 = Conv2D(64, (3, 3), padding='same', activation='relu', name= 'inc_tower_1_2')(tower_1)
-
-    tower_2 = Conv2D(64, (1, 1), padding='same', activation='relu',name= 'inc_tower_2_1')(x)
-    tower_2 = Conv2D(64, (5, 5), padding='same', activation='relu', name= 'inc_tower_2_2')(tower_2)
-
-    tower_3 = MaxPooling2D(pool_size=(3, 3), strides=(1, 1), padding='same', name= 'inc_tower_3_1')(x)
-    tower_3 = Conv2D(64, (1, 1), padding='same', activation='relu', name= 'inc_tower_3_2')(tower_3)
-    print(K.image_dim_ordering)
-    if(K.image_dim_ordering =='tf'):
-        bn_axis = 3
-    else:
-        bn_axis = 1
-    x = layers.concatenate([tower_1, tower_2, tower_3], axis=bn_axis)
-    print(x)'''
     x = inception_net(x) # 1
-    x = inception_net(x) # 2
+    #x = inception_net(x) # 2
     op1 = inception_net(x) # 3
-    #y  = Flatten()(op1)
     y  = Flatten()(op1)
-    y  = Dense(64, activation='tanh')(y)
+    #y  = Dense(64, activation='tanh')(y)
     tx_1 = Dense(3, activation='tanh', name='tx_1')(y)
     rx_1 = Dense(4, activation='tanh', name='rx_1')(y)
 
     x = inception_net(op1) # 4
-    x = inception_net(x) # 5
+    #x = inception_net(x) # 5
     op2 = inception_net(x) # 6
     y  = Flatten()(op2)
-    y  = Dense(64, activation='tanh')(y)
+    #y  = Dense(64, activation='tanh')(y)
     tx_2 = Dense(3, activation='tanh', name='tx_2')(y)
     rx_2 = Dense(4, activation='tanh', name='rx_2')(y)
 
     x = inception_net(op2) #7
-    x = inception_net(x) # 8
-    x = inception_net(x) #9
+    #x = inception_net(x) # 8
+    #x = inception_net(x) #9
 
     op3 = AveragePooling2D((3,3), name ='AveragePooling')(x)
     y  = Flatten()(op3)
-    y  = Dense(64, activation='tanh')(y)
+    #y  = Dense(64, activation='tanh')(y)
     tx_3 = Dense(3, activation='tanh', name='tx_3')(y)
     rx_3 = Dense(4, activation='tanh', name='rx_3')(y)
-    print(img_input)
-    print(tx_1)
+
     model = Model(inputs=img_input, outputs=[tx_1, rx_1, tx_2, rx_2, tx_3, rx_3])
 
     model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
@@ -177,9 +161,9 @@ def main():
 
     model.save('inc_pose_net.h5')
 
-    p_tx_1, p_rx_1 , p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict(test_imgs)
+    p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict(test_imgs)
     #p_tx_1, p_rx_1 = model.predict(test_imgs)
     print(p_tx_1)
-
+    gc.collect()
 if __name__ == '__main__':
     main()
