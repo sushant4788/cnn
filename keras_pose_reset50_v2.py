@@ -25,7 +25,7 @@ num_epochs = 5
 img_rows, img_cols, img_channels = 224, 224, 3
 base_dir = '/home/sushant/Downloads/Kings/'
 
-use_dummy_ds = False
+use_dummy_ds = True
 def main():
     # read the images
     if(use_dummy_ds == True):
