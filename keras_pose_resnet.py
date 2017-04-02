@@ -18,28 +18,27 @@ import gc
 import glob, os
 
 # Set some hardcoded sizes
-img_rows ,img_cols, img_channels = 224, 224, 3
+# img_rows ,img_cols, img_channels = 224, 224, 3
 # Some dir locations
 #training_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_train_mod.txt'
 #testing_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_test_mod.txt'
 #dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
-base_dir ='/home/sushant/Downloads/Kings/'
-
+#base_dir ='/home/sushant/Downloads/Kings/'
 batch_size = 20
 num_epochs = 2
 
-def create_dummy_ds():
+def create_dummy_ds(num_samples = 100, d_img_rows = 224, d_img_cols = 224, d_img_channels= 3):
     # Creates a dummy ds for quick evaluation
-    train_imgs =    np.random.random((100, 224, 224, 3)) # 100 images r,c, channels
-    train_pose_tx = np.random.random((100, 3)) # tx, ty, tz
-    train_pose_rt = np.random.random((100, 4)) # w, p, q, r quarternion
-    test_imgs =     np.random.random((100, 224, 224, 3))
-    test_pose_tx =  np.random.random((100, 3)) # tx, ty,
-    test_pose_rt=   np.random.random((100, 4)) # w, p, q
+    train_imgs =    np.random.random((num_samples, d_img_rows, d_img_cols, d_img_channels)) # 100 images r,c, channels
+    train_pose_tx = np.random.random((num_samples, 3)) # tx, ty, tz
+    train_pose_rt = np.random.random((num_samples, 4)) # w, p, q, r quarternion
+    test_imgs =     np.random.random((num_samples, d_img_rows, d_img_cols, d_img_channels))
+    test_pose_tx =  np.random.random((num_samples, 3)) # tx, ty,
+    test_pose_rt=   np.random.random((num_samples, 4)) # w, p, q
     return(train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,
     test_pose_rt)
 #num_samples = 20
-def process_dataset(filename):
+def process_dataset(filename, base_dir):
     with open(filename) as f:
         lines = f.readlines()
     # ============================
@@ -62,24 +61,26 @@ def process_dataset(filename):
     #print(pose[0,:])
     return(img_list, pose)
 
-def read_images(img_list):
+def read_images(img_list, img_rows, img_cols, img_channels):
+    decision = False
     imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels))
     for i in range(0, len(img_list)):
-    #for i in range(0, 1):
-        #print(img_list[i])
-        #loc = dataset_location + img_list[i]
-        #print(loc)
         im = Image.open(img_list[i])
-        np_im = np.asarray(im, dtype='float32')
-        y,x,ch = np_im.shape
-        c_y = np.floor(y/2)
-        c_x = np.floor(x/2)
-        s_y = int(np.floor(c_y - (img_rows/2)))
-        s_x = int(np.floor(c_x - (img_cols/2)))
-        c_im = np_im[s_y: s_y+img_rows, s_x: s_x+ img_cols, :]
-        #c_im = np.swapaxes(c_im, 1,2)
-        #c_im = np.swapaxes(c_im, 0,1)
-        imgs[i, :, :, :] = c_im
+        if(decision == True):
+            np_im = np.asarray(im, dtype='float32')
+            y,x,ch = np_im.shape
+            c_y = np.floor(y/2)
+            c_x = np.floor(x/2)
+            s_y = int(np.floor(c_y - (img_rows/2)))
+            s_x = int(np.floor(c_x - (img_cols/2)))
+            c_im = np_im[s_y: s_y+img_rows, s_x: s_x+ img_cols, :]
+            #c_im = np.swapaxes(c_im, 1,2)
+            #c_im = np.swapaxes(c_im, 0,1)
+            imgs[i, :, :, :] = c_im
+        else:
+            im_r = im.resize((img_cols, img_rows), Image.BILINEAR)
+            np_im = np.asarray(im_r, dtype='float32')
+            imgs[i, :, :, :] = np_im
     return(imgs)
 
 def gather_train_test_txt_list(base_dir):
@@ -97,11 +98,11 @@ def gather_train_test_txt_list(base_dir):
     print(len(train_txt_list))
     return (train_txt_list, test_txt_list)
 
-def read_image_and_pose(txt_list):
+def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir):
     for i in range(0, len(txt_list)):
-        c_img_list, c_pose = process_dataset(txt_list[i])
+        c_img_list, c_pose = process_dataset(txt_list[i], base_dir)
         print('Images in current list: ', len(c_img_list))
-        c_imgs = read_images(c_img_list)
+        c_imgs = read_images(c_img_list,  img_rows, img_cols, img_channels)
         if(i == 0):
             pose = c_pose
             images = c_imgs
@@ -111,10 +112,10 @@ def read_image_and_pose(txt_list):
     print('total number samples: ', images.shape[0])
     return(images, pose)
 
-def load_train_test_splits():
+def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
     train_txt_list, test_txt_list = gather_train_test_txt_list(base_dir)
-    train_imgs, train_pose = read_image_and_pose(train_txt_list)
-    test_imgs, test_pose = read_image_and_pose(test_txt_list)
+    train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir)
+    test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir)
     # Preprocess the data and return the final arrays
     train_imgs = train_imgs.astype('float32')
     train_pose = train_pose.astype('float32')
@@ -128,14 +129,6 @@ def load_train_test_splits():
 
     train_imgs /=255
     test_imgs /=255
-
-    # make the ds smaller to see if this works
-    '''train_imgs = train_imgs[:100, :, :,:] # 100 images r,c, channels
-    train_pose_tx = train_pose_tx[:100,:] # tx, ty, tz
-    train_pose_rt = train_pose_rt[:100,:] # w, p, q, r quarternion
-    test_imgs = train_imgs[:50, :, : ,:]
-    test_pose_tx = test_pose_tx[:50,:]
-    test_pose_rt= test_pose_rt[:50,:]'''
 
     return(train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,
     test_pose_rt)

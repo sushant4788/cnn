@@ -1,4 +1,4 @@
-'''Complete replica of the ICCV 2015 PoseNet Paper'''
+'''Complete posenet from ICCV 2015 paper'''
 from __future__ import print_function
 import numpy as np
 import warnings
@@ -20,7 +20,7 @@ import gc
 import keras.backend as K
 import keras_pose_resnet
 
-use_dummy_ds = True
+use_dummy_ds = False
 batch_size = 20
 num_epochs = 5
 def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2)):
@@ -97,9 +97,7 @@ t2_f1=32, t3_f1=32):
     tower_2 = Conv2D(t2_f1, (5, 5), #padding='same',
     use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(tower_2)
 
-    tower_3 = ZeroPatx_3 = Dense(3, activation='tanh', name='tx_3', kernel_regularizer=regularizers.l2(0.01))(y)
-    rx_3 = Dense(4, activation='tanh', name='rx_3', kernel_regularizer=regularizers.l2(0.01))(y)
-dding2D((1,1))(input_img)
+    tower_3 = ZeroPadding2D((1,1))(input_img)
     tower_3 = MaxPooling2D(pool_size=(3, 3), strides=(1, 1), #padding='same'
     )(tower_3)
     tower_3 = Conv2D(t3_f1, (1, 1), #padding='same',
@@ -113,8 +111,7 @@ dding2D((1,1))(input_img)
     output = layers.concatenate([tower_0, tower_1, tower_2, tower_3], axis=bn_axis)
     return (output)
 
-def inc_pose_net():
-    img_rows, img_cols, img_channels = 224, 224, 3
+def inc_pose_net(img_rows, img_cols, img_channels):
     img_input = Input(shape=(img_rows, img_cols, img_channels))
     if K.image_dim_ordering() == 'th':
         bn_axis = 1
@@ -156,9 +153,7 @@ def inc_pose_net():
     x = inception_net(x, 128, 128, 256, 24, 24, 64) # 5
     op2 = inception_net(x, 112, 144, 288, 32, 64, 64) # 6
     y  = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op2)
-    y = Conv2D(128, (tx_3 = Dense(3, activation='tanh', name='tx_3', kernel_regularizer=regularizers.l2(0.01))(y)
-    rx_3 = Dense(4, activation='tanh', name='rx_3', kernel_regularizer=regularizers.l2(0.01))(y)
-1,1), use_bias= True, activation='relu',
+    y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_regularizer=regularizers.l2(0.01))(y)
     y  = Flatten()(y)
     y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
@@ -189,19 +184,22 @@ def inc_pose_net():
 
     model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
 
-    print(model.summary())tx_3 = Dense(3, activation='tanh', name='tx_3', kernel_regularizer=regularizers.l2(0.01))(y)
-    rx_3 = Dense(4, activation='tanh', name='rx_3', kernel_regularizer=regularizers.l2(0.01))(y)
-
+    print(model.summary())
 
     return(model)
 def main():
+    num_samples = 100
+    img_rows, img_cols, img_channels = 256, 455, 3
+    base_dir = '/home/sushant/Downloads/Kings/'
     if(use_dummy_ds == True):
         print('Using dummy ds')
-        train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx, test_pose_rt=keras_pose_resnet.create_dummy_ds()
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx,test_pose_rt=keras_pose_resnet.create_dummy_ds(num_samples, img_rows,
+        img_cols, img_channels)
     else:
-        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits()
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir, img_rows,
+        img_cols, img_channels)
 
-    model = inc_pose_net()
+    model = inc_pose_net(img_rows, img_cols, img_channels)
 
     tb = TensorBoard(log_dir='./logs_feature_detector_with_val', histogram_freq=1,
     write_graph=True, write_images=True)
