@@ -111,7 +111,7 @@ def read_image_and_pose(txt_list):
     print('total number samples: ', images.shape[0])
     return(images, pose)
 
-def load_train_test_splits(base_dir):
+def load_train_test_splits():
     train_txt_list, test_txt_list = gather_train_test_txt_list(base_dir)
     train_imgs, train_pose = read_image_and_pose(train_txt_list)
     test_imgs, test_pose = read_image_and_pose(test_txt_list)
