@@ -9,7 +9,7 @@ class LRN2D(Layer):
 
     """
 
-    def __init__(self, alpha=1e-4, k=2, beta=0.75, n=5):
+    def __init__(self, alpha=1e-4, k=1, beta=0.75, n=5):
         if n % 2 == 0:
             raise NotImplementedError("LRN2D only works with odd n. n provided: " + str(n))
         super(LRN2D, self).__init__()

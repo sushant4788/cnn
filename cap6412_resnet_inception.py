@@ -40,25 +40,25 @@ def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
 t2_f1=32, t3_f1=32):
     '''This is the base building block of the inception net'''
     tower_0 = Conv2D(t0_f0, (1,1), #padding='same',
-    use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(input_img)
+    use_bias = True, activation='relu', kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(input_img)
 
     tower_1 = Conv2D(t1_f0, (1, 1), #padding='same',
-    use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(input_img)
+    use_bias = True, activation='relu',kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(input_img)
     tower_1 = ZeroPadding2D((1,1))(tower_1)
     tower_1 = Conv2D(t1_f1, (3, 3), #padding='same',
-    use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(tower_1)
+    use_bias = True, activation='relu',kernel_initializer = RandomNormal(mean=0.0, stddev= 0.04), kernel_regularizer=regularizers.l2(0.01))(tower_1)
 
     tower_2 = Conv2D(t2_f0, (1, 1), #padding='same',
-    use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(input_img)
+    use_bias = True, activation='relu', kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(input_img)
     tower_2 = ZeroPadding2D((2,2))(tower_2)
     tower_2 = Conv2D(t2_f1, (5, 5), #padding='same',
-    use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(tower_2)
+    use_bias = True, activation='relu',kernel_initializer = RandomNormal(mean=0.0, stddev= 0.08), kernel_regularizer=regularizers.l2(0.01))(tower_2)
 
     tower_3 = ZeroPadding2D((1,1))(input_img)
     tower_3 = MaxPooling2D(pool_size=(3, 3), strides=(1, 1), #padding='same'
     )(tower_3)
     tower_3 = Conv2D(t3_f1, (1, 1), #padding='same',
-    use_bias = True, activation='relu',kernel_regularizer=regularizers.l2(0.01))(tower_3)
+    use_bias = True, activation='relu',kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(tower_3)
 
     if(K.image_dim_ordering =='th'):
         bn_axis = 1
@@ -80,16 +80,19 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     # inception_net like architecture with BatchNormalization
     x = ZeroPadding2D((3,3))(img_input)
     x = Conv2D(64, (7, 7), strides = 2, activation='relu',
-    kernel_regularizer=regularizers.l2(0.01), name='conv1')(x)
+    kernel_initializer = RandomNormal(mean=0.0, stddev=0.015), kernel_regularizer=regularizers.l2(0.01),
+    use_bias = True, name='conv1')(x)
     x = MaxPooling2D((3,3), strides=(2,2), name='MaxPooling2D')(x)
-    x = BatchNormalization(axis = bn_axis, name='bn_1')(x)
+    # x = BatchNormalization(axis = bn_axis, name='bn_1')(x)
+    x = LRN2D()(x)
 
     x = Conv2D(64,(1,1), activation='relu',
-    kernel_regularizer=regularizers.l2(0.01))(x) # Xavier
+    kernel_initializer = 'glorot_normal', use_bias = True, kernel_regularizer=regularizers.l2(0.01))(x) # Xavier
     x = ZeroPadding2D((1,1))(x)
     x = Conv2D(192, (3, 3), activation= 'relu',
-    kernel_regularizer=regularizers.l2(0.01), name = 'conv2')(x)
-    x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
+    kernel_initializer = RandomNormal(mean=0.0, stddev = 0.02), use_bias = True, kernel_regularizer=regularizers.l2(0.01), name = 'conv2')(x)
+    #x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
+    x = LRN2D()(x)
     x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
 
     x = inception_net(x, 64, 96, 128, 16, 32, 32) # 1
@@ -99,7 +102,7 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     # First classification branch
     y = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op1)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
-    kernel_regularizer=regularizers.l2(0.01))(y)
+    kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     y  = Flatten()(y)
     y = Dense(1024, use_bias= True, name='cls1_fc1_pose',
     # activation='relu'
@@ -116,7 +119,7 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     # Second classification net
     y  = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op2)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
-    kernel_regularizer=regularizers.l2(0.01))(y)
+    kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     y  = Flatten()(y)
     # Mod: Changing the activation to tanh
     y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
