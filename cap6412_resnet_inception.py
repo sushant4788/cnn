@@ -26,10 +26,12 @@ from imagenet_utils import decode_predictions, preprocess_input
 from keras.callbacks import TensorBoard
 from keras import regularizers
 from keras.initializers import RandomNormal
+from Local_Resp_Norm import LRN2D
 import gc
 import keras.backend as K
 import keras_pose_resnet
 import tensorflow as tf
+import datetime
 
 use_dummy_ds = True
 use_gpu = False
@@ -171,14 +173,25 @@ def main():
         print('============USING CPU=========')
     # TensorBoard log dir name:
     tb_log_dir_name= './logs_posenet'
+    # name of the model
+    c_time = datetime.datetime.now()
+    c_time = c_time.__str__()
+    c_time = c_time.replace(" ", "-")
+    c_time = c_time.replace(":", '-')
+    c_time = c_time.replace(".", '-')
+    model_name = 'posenet_'+ c_time + '.h5'
+    print('Model name : ', model_name)
     # ==========================================================================
     # The main part !!
     # ==========================================================================
     if(use_dummy_ds == True):
         print('Using dummy ds')
+        model_name = 'dummy_' + model_name
+        tb_log_dir_name='./dummy_logs'
         train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx,test_pose_rt=keras_pose_resnet.create_dummy_ds(num_samples, img_rows,
         img_cols, img_channels)
     else:
+        print('Using original ds')
         train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir, img_rows,
         img_cols, img_channels)
     with tf.device(device):
@@ -189,7 +202,7 @@ def main():
         model.fit(train_imgs, [train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt,train_pose_tx, train_pose_rt],
         batch_size= batch_size, callbacks = [tb], epochs = num_epochs, shuffle=True)
 
-        model.save('inc_pose_net.h5')
+        model.save(model_name)
 
         p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict(test_imgs)
         #p_tx_1, p_rx_1 = model.predict(test_imgs)
