@@ -33,8 +33,8 @@ import tensorflow as tf
 
 use_dummy_ds = True
 use_gpu = False
-batch_size = 20
-num_epochs = 5
+batch_size = 64
+num_epochs = 80
 
 def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
 t2_f1=32, t3_f1=32):
