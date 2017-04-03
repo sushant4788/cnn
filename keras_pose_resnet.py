@@ -112,6 +112,16 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir):
     print('total number samples: ', images.shape[0])
     return(images, pose)
 
+def test_only_splits(base_dir, img_rows, img_cols, img_channels):
+    train_txt_list, test_txt_list = gather_train_test_txt_list(base_dir)
+    test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir)
+    test_imgs = test_imgs.astype('float32')
+    test_pose = test_pose.astype('float32')
+    test_pose_tx = test_pose[:,:3]
+    test_pose_rt = test_pose[:,3:]
+    test_imgs /=255
+    return(test_imgs, test_pose_tx, test_pose_rt)
+
 def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
     train_txt_list, test_txt_list = gather_train_test_txt_list(base_dir)
     train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir)

@@ -32,31 +32,31 @@ def main():
         print('Using dummy ds')
         train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx, test_pose_rt=keras_pose_resnet.create_dummy_ds()
     else:
-        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir )
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir, img_rows, img_cols, img_channels )
 
     base_model = ResNet50()
     # the output of the last layer of the resnet
     y = base_model.get_layer('activation_5').output
     y = Flatten()(y)
-    y = Dense(64, activation='tanh')(y)
+    y = Dense(512, activation='tanh')(y)
     int_position = Dense(3, activation='tanh')(y)
     int_rotation = Dense(4, activation='tanh')(y)
     x = base_model.output
-    x = Dense(64, activation='tanh')(x)
+    x = Dense(1024, activation='tanh')(x)
     final_position = Dense(3, activation='tanh')(x)
     final_rotation = Dense(4, activation='tanh')(x)
     model = Model(input = base_model.input, output=[int_position, int_rotation,
     final_position, final_rotation])
 
     #print(model.summary())
-    model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.5, 250.0, 1.0, 500.0])
+    model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.5, 250.0, 1.0, 350.0])
 
     model.fit(train_imgs, [train_pose_tx, train_pose_rt, train_pose_tx,
     train_pose_rt], batch_size= batch_size, epochs = num_epochs, shuffle=True)
 
-    model.save('pose_resnet_v2.h5')
-    ts_pos_pred, ts_rot_pred, c1, c2 = model.predict(test_imgs)
-    print(ts_pos_pred)
-
+    model.save('resnet50_final_v2.h5')
+    ts_pos_pred, ts_rot_pred, final_ts_position, final_ts_rotation = model.predict(test_imgs)
+    print(final_ts_position)
+    K.clear_session()
 if __name__ == '__main__':
     main()
