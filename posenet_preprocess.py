@@ -48,7 +48,7 @@ def read_pose_val_and_img_list(filename, base_dir):
         np_pose = np.asarray(l_pose)
         pose[i,:] = np_pose
     return(img_list, pose)
-    
+
 def read_training_images(img_list, img_rows, img_cols, img_channels):
     '''Read the images from the list of the training images, resize the images
     to 455 x 256 as done in the PoseNet paper and then randomly crop a path of
@@ -118,11 +118,15 @@ def gather_train_test_txt_list(base_dir):
     #print(len(train_txt_list))
     return (train_txt_list, test_txt_list)
 
-def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir):
+def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir, is_train):
     for i in range(0, len(txt_list)):
         c_img_list, c_pose = read_pose_val_and_img_list(txt_list[i], base_dir)
         print('Images in current list: ', len(c_img_list))
-        c_imgs = read_images(c_img_list,  img_rows, img_cols, img_channels)
+        if(is_train == True):
+            c_imgs = read_training_images(c_img_list, img_rows, img_cols, img_channels)
+        else:
+            c_imgs = read_testing_images(c_img_list, img_rows, img_cols, img_channels)
+        #c_imgs = read_images(c_img_list,  img_rows, img_cols, img_channels)
         if(i == 0):
             pose = c_pose
             images = c_imgs
@@ -132,12 +136,10 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir):
     print('total number samples: ', images.shape[0])
     return(images, pose)
 
-
-
 def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
     train_txt_list, test_txt_list = gather_train_test_txt_list(base_dir)
-    train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir)
-    test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir)
+    train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir, True)
+    test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir, False)
     # Preprocess the data and return the final arrays
     train_imgs = train_imgs.astype('float32')
     train_pose = train_pose.astype('float32')
