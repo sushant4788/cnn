@@ -29,7 +29,7 @@ from keras.initializers import RandomNormal
 from Local_Resp_Norm import LRN2D
 import gc
 import keras.backend as K
-import keras_pose_resnet
+import posenet_preprocess
 import tensorflow as tf
 import datetime
 
