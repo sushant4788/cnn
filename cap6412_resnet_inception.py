@@ -24,7 +24,7 @@ from keras.utils.layer_utils import convert_all_kernels_in_model
 from keras.utils.data_utils import get_file
 from imagenet_utils import decode_predictions, preprocess_input
 from keras.callbacks import TensorBoard
-from keras import regularizers
+from keras import regularizers, optimizers
 from keras.initializers import RandomNormal
 from Local_Resp_Norm import LRN2D
 import gc
@@ -35,7 +35,7 @@ import datetime
 
 use_dummy_ds = False
 use_gpu = True
-batch_size = 64
+batch_size = 16
 num_epochs = 80
 
 def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
@@ -153,7 +153,8 @@ def inc_pose_net(img_rows, img_cols, img_channels):
 
     # Build the model, print summary !!
     model = Model(inputs=img_input, outputs=[tx_1, rx_1, tx_2, rx_2, tx_3, rx_3])
-    model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
+    sgd = optimizers.SGD(lr = 0.000001, momentum = 0.9, decay = 1e-6)
+    model.compile(optimizer=sgd, loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
     print(model.summary())
     return(model)
 def main():
