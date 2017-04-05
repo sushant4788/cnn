@@ -161,8 +161,8 @@ def main():
     # initialization Params go here !!
     # ==========================================================================
     num_samples = 20
-    img_rows, img_cols, img_channels = 256, 455, 3
-    #img_rows, img_cols, img_channels = 64, 114, 3
+    #img_rows, img_cols, img_channels = 256, 455, 3
+    img_rows, img_cols, img_channels = 224, 224, 3
     base_dir = '/home/sushant/Downloads/Kings/'
     # GPU or CPU
     if(use_gpu == True):
@@ -188,7 +188,7 @@ def main():
         print('Using dummy ds')
         model_name = 'dummy_' + model_name
         tb_log_dir_name='./dummy_logs'
-        train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx,test_pose_rt=keras_pose_resnet.create_dummy_ds(num_samples, img_rows,
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs,test_pose_tx,test_pose_rt=posenet_preprocess.create_dummy_ds(num_samples, img_rows,
         img_cols, img_channels)
     else:
         print('Using original ds')

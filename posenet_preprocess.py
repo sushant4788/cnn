@@ -61,7 +61,10 @@ def read_training_images(img_list, img_rows, img_cols, img_channels):
         np_im = np.asarray(im_r, dtype='float32')
         s_x = random.randint(0,230)
         s_y = random.randint(0,30)
+        #print('s_x', s_x)
+        #print('s_y', s_y)
         c_im = np_im[s_y: s_y+img_rows, s_x:s_x+img_cols,:]
+        #print(c_im.shape)
         imgs[i,:,:,:] = c_im
     return(imgs)
 
@@ -133,7 +136,7 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir, is
         else:
             pose = np.concatenate((pose, c_pose), axis=0)
             images = np.concatenate((images, c_imgs), axis=0)
-    print('total number samples: ', images.shape[0])
+    #print('total number samples: ', images.shape[0])
     return(images, pose)
 
 def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
