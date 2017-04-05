@@ -27,7 +27,7 @@ def test_only_splits(base_dir, img_rows, img_cols, img_channels):
     test_pose = test_pose.astype('float32')
     test_pose_tx = test_pose[:,:3]
     test_pose_rt = test_pose[:,3:]
-    test_imgs /=255
+    #test_imgs /=255
     return(test_imgs, test_pose_tx, test_pose_rt)
 
 #===============================================================================

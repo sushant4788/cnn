@@ -33,8 +33,8 @@ import posenet_preprocess
 import tensorflow as tf
 import datetime
 
-use_dummy_ds = True
-use_gpu = False
+use_dummy_ds = False
+use_gpu = True
 batch_size = 64
 num_epochs = 80
 
@@ -192,7 +192,7 @@ def main():
         img_cols, img_channels)
     else:
         print('Using original ds')
-        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = keras_pose_resnet.load_train_test_splits(base_dir, img_rows,
+        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = posenet_preprocess.load_train_test_splits(base_dir, img_rows,
         img_cols, img_channels)
     with tf.device(device):
         model = inc_pose_net(img_rows, img_cols, img_channels)
