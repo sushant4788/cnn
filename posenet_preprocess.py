@@ -1,9 +1,7 @@
 from __future__ import print_function
 from PIL import Image
 import numpy as np
-import gc
-import glob, os
-import random
+import gc, glob, os, h5py, random
 #===========================================================================
 RESIZE_ROWS = 256
 RESIZE_COLS = 455
@@ -53,7 +51,7 @@ def read_training_images(img_list, img_rows, img_cols, img_channels):
     '''Read the images from the list of the training images, resize the images
     to 455 x 256 as done in the PoseNet paper and then randomly crop a path of
     size 224 x 224 from this image.'''
-    imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels))
+    imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels), dtype='float32')
     for i in range(0, len(img_list)):
         im = Image.open(img_list[i])
         # Resize the image
@@ -72,7 +70,7 @@ def read_testing_images(img_list, img_rows, img_cols, img_channels):
     '''Read the images from the list of tesing images, resize the images to
     455 x 256 as done in the PoseNet paper then crop a path of size 224 x 224
     from the center of the image'''
-    imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels))
+    imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels), dtype ='float32')
     for i in range(0, len(img_list)):
         im = Image.open(img_list[i])
         im_r = im.resize((RESIZE_COLS, RESIZE_ROWS), Image.BILINEAR)
@@ -130,6 +128,8 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir, is
         else:
             c_imgs = read_testing_images(c_img_list, img_rows, img_cols, img_channels)
         #c_imgs = read_images(c_img_list,  img_rows, img_cols, img_channels)
+        # Subtract the mean of the current group
+        c_imgs -= c_imgs.mean()
         if(i == 0):
             pose = c_pose
             images = c_imgs
@@ -144,13 +144,13 @@ def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
     train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir, True)
     test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir, False)
     # Preprocess the data and return the final arrays
-    train_imgs = train_imgs.astype('float32')
-    train_pose = train_pose.astype('float32')
+    #train_imgs = train_imgs.astype('float32')
+    #train_pose = train_pose.astype('float32')
     train_pose_tx = train_pose[:,:3]
     train_pose_rt = train_pose[:,3:]
 
-    test_imgs = test_imgs.astype('float32')
-    test_pose = test_pose.astype('float32')
+    #test_imgs = test_imgs.astype('float32')
+    #test_pose = test_pose.astype('float32')
     test_pose_tx = test_pose[:,:3]
     test_pose_rt = test_pose[:,3:]
 
@@ -170,6 +170,26 @@ def main():
     # dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
     base_dir ='/home/sushant/Downloads/Kings/'
     train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx, test_pose_rt = load_train_test_splits(base_dir, img_rows, img_cols, img_channels )
+    h5f = h5py.File('train.h5', 'w')
+    h5f.create_dataset('train_imgs', data=train_imgs, dtype='float32')
+    h5f.create_dataset('train_pose_tx', data=train_pose_tx, dtype='float32')
+    h5f.create_dataset('train_pose_rt', data=train_pose_rt, dtype='float32')
+    h5f.close()
+
+    h5f = h5py.File('test.h5', 'w')
+    h5f.create_dataset('test_imgs', data=train_imgs, dtype='float32')
+    h5f.create_dataset('test_pose_tx', data=train_pose_tx, dtype='float32')
+    h5f.create_dataset('test_pose_rt', data=train_pose_rt, dtype='float32')
+    h5f.close()
+
+    #h5f = h5py.File('train.h5','r')
+    #b = h5f['train_imgs'][:]
+    #c = h5f['train_pose_tx'][:]
+    #d = h5f['train_pose_rt'][:]
+    #print(b.shape)
+    #print(c.shape)
+    #print(d.shape)
+    #h5f.close()
 
 if __name__ == '__main__':
     main()

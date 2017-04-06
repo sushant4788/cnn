@@ -27,7 +27,7 @@ from keras.callbacks import TensorBoard
 from keras import regularizers, optimizers
 from keras.initializers import RandomNormal
 from Local_Resp_Norm import LRN2D
-import gc
+import gc, h5py
 import keras.backend as K
 import posenet_preprocess
 import tensorflow as tf
@@ -165,6 +165,9 @@ def main():
     #img_rows, img_cols, img_channels = 256, 455, 3
     img_rows, img_cols, img_channels = 224, 224, 3
     base_dir = '/home/sushant/Downloads/Kings/'
+    ds_dir = '/home/sushant/dataset/'
+    train_prefix = 'train.h5'
+    test_prefix = 'test.h5'
     # GPU or CPU
     if(use_gpu == True):
         device = 'gpu:0'
@@ -193,8 +196,21 @@ def main():
         img_cols, img_channels)
     else:
         print('Using original ds')
-        train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = posenet_preprocess.load_train_test_splits(base_dir, img_rows,
-        img_cols, img_channels)
+        #train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = posenet_preprocess.load_train_test_splits(base_dir, img_rows,
+        #img_cols, img_channels)
+        # Read the hdf5 data
+        train = h5py.File(ds_dir+train_prefix, 'r')
+        train_imgs = train['train_imgs'][:]
+        train_pose_tx = train['train_pose_tx'][:]
+        train_pose_rt = train['train_pose_rt'][:]
+        train.close()
+
+        test = h5py.File(ds_dir+test_prefix, 'r')
+        test_imgs = test['test_imgs'][:]
+        test_pose_tx = test['test_pose_tx'][:]
+        test_pose_rt = test['test_pose_rt'][:]
+        test.close()
+
     with tf.device(device):
         model = inc_pose_net(img_rows, img_cols, img_channels)
         # Use TensorBoard to generate graphs of loss
