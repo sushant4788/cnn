@@ -155,7 +155,7 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     # Build the model, print summary !!
     model = Model(inputs=img_input, outputs=[tx_1, rx_1, tx_2, rx_2, tx_3, rx_3])
     sgd = optimizers.SGD(lr = 0.000001, momentum = 0.9, decay = 1e-6)
-    model.compile(optimizer=sgd, loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
+    model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
     print(model.summary())
     return(model)
 def main():
