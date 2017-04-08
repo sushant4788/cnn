@@ -129,6 +129,7 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir, is
             c_imgs = read_testing_images(c_img_list, img_rows, img_cols, img_channels)
         #c_imgs = read_images(c_img_list,  img_rows, img_cols, img_channels)
         # Subtract the mean of the current group
+        c_imgs /= 255.0
         c_imgs -= c_imgs.mean()
         if(i == 0):
             pose = c_pose

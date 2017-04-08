@@ -32,10 +32,11 @@ import keras.backend as K
 import posenet_preprocess
 import tensorflow as tf
 import datetime
+import math
 
 use_dummy_ds = False
 use_gpu = True
-batch_size = 16
+batch_size = 75
 num_epochs = 80
 
 def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
@@ -85,16 +86,16 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     kernel_initializer = RandomNormal(mean=0.0, stddev=0.015), kernel_regularizer=regularizers.l2(0.01),
     use_bias = True, name='conv1')(x)
     x = MaxPooling2D((3,3), strides=(2,2), name='MaxPooling2D')(x)
-    # x = BatchNormalization(axis = bn_axis, name='bn_1')(x)
-    x = LRN2D()(x)
+    x = BatchNormalization(axis = bn_axis, name='bn_1')(x)
+    # x = LRN2D()(x)
 
     x = Conv2D(64,(1,1), activation='relu',
     kernel_initializer = 'glorot_normal', use_bias = True, kernel_regularizer=regularizers.l2(0.01))(x) # Xavier
     x = ZeroPadding2D((1,1))(x)
     x = Conv2D(192, (3, 3), activation= 'relu',
     kernel_initializer = RandomNormal(mean=0.0, stddev = 0.02), use_bias = True, kernel_regularizer=regularizers.l2(0.01), name = 'conv2')(x)
-    #x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
-    x = LRN2D()(x)
+    x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
+    #x = LRN2D()(x)
     x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
 
     x = inception_net(x, 64, 96, 128, 16, 32, 32) # 1
@@ -165,7 +166,7 @@ def main():
     #img_rows, img_cols, img_channels = 256, 455, 3
     img_rows, img_cols, img_channels = 224, 224, 3
     base_dir = '/home/sushant/Downloads/Kings/'
-    ds_dir = '/home/sushant/dataset/'
+    ds_dir = '/home/sushant/dataset_mod/'
     train_prefix = 'train.h5'
     test_prefix = 'test.h5'
     # GPU or CPU
@@ -211,6 +212,8 @@ def main():
         test_pose_rt = test['test_pose_rt'][:]
         test.close()
 
+        #print(train_imgs[3,:,:,:])
+
     with tf.device(device):
         model = inc_pose_net(img_rows, img_cols, img_channels)
         # Use TensorBoard to generate graphs of loss
@@ -223,8 +226,32 @@ def main():
 
         p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict(test_imgs)
         #p_tx_1, p_rx_1 = model.predict(test_imgs)
-        print(p_tx_1)
+        # print(p_tx_1)
+
+
+        results = np.zeros((test_imgs.shape[0], 2), dtype = 'float32')
+        for i in range(0, test_imgs.shape[0]):
+            q2 = p_rx_3[i,:] / np.linalg.norm(p_rx_3[i,:])
+            q1 = test_pose_rt[i, :] / np.linalg.norm(test_pose_rt[i,:])
+            d = abs(np.sum(np.multiply(q1, q2)))
+            theta = 2*np.arccos(d) * 180/math.pi
+            error_x = np.linalg.norm(test_pose_tx[i, :] - p_tx_3[i, :])
+            results[i, :] = [error_x, theta]
+            print ('Iteration:  ', i, '  Error XYZ (m):  ', error_x, '  Error Q (degrees):  ', theta)
+        median_result = np.median(results,axis=0)
+        print('Median error meters: ', median_result[0])
+        print('Median error degrees: ', median_result[1])
+        np.savetxt('results.txt', results, delimiter=' ')
+        print( 'Success!')
+
         K.clear_session()
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     main()
