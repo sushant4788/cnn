@@ -169,7 +169,7 @@ def main():
     # training_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_train_mod.txt'
     # testing_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_test_mod.txt'
     # dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
-    base_dir ='/home/sushant/Downloads/Kings/'
+    base_dir ='/home/sushant/Downloads/'
     train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx, test_pose_rt = load_train_test_splits(base_dir, img_rows, img_cols, img_channels )
     h5f = h5py.File('train.h5', 'w')
     h5f.create_dataset('train_imgs', data=train_imgs, dtype='float32')

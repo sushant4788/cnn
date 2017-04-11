@@ -37,7 +37,7 @@ import math
 use_dummy_ds = False
 use_gpu = True
 batch_size = 75
-num_epochs = 80
+num_epochs = 500
 
 def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
 t2_f1=32, t3_f1=32):
@@ -86,8 +86,8 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     kernel_initializer = RandomNormal(mean=0.0, stddev=0.015), kernel_regularizer=regularizers.l2(0.01),
     use_bias = True, name='conv1')(x)
     x = MaxPooling2D((3,3), strides=(2,2), name='MaxPooling2D')(x)
-    x = BatchNormalization(axis = bn_axis, name='bn_1')(x)
-    # x = LRN2D()(x)
+    #x = BatchNormalization(axis = bn_axis, name='bn_1')(x)
+    x = LRN2D()(x)
 
     x = Conv2D(64,(1,1), activation='relu',
     kernel_initializer = 'glorot_normal', use_bias = True, kernel_regularizer=regularizers.l2(0.01))(x) # Xavier
@@ -95,8 +95,8 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     x = Conv2D(192, (3, 3), activation= 'relu',
     kernel_initializer = RandomNormal(mean=0.0, stddev = 0.02), use_bias = True, kernel_regularizer=regularizers.l2(0.01), name = 'conv2')(x)
     x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
-    #x = LRN2D()(x)
-    x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
+    x = LRN2D()(x)
+    #x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
 
     x = inception_net(x, 64, 96, 128, 16, 32, 32) # 1
     x = inception_net(x, 128, 128, 192, 96, 64) # 2
@@ -155,7 +155,7 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     # Build the model, print summary !!
     model = Model(inputs=img_input, outputs=[tx_1, rx_1, tx_2, rx_2, tx_3, rx_3])
     sgd = optimizers.SGD(lr = 0.000001, momentum = 0.9, decay = 1e-6)
-    model.compile(optimizer='rmsprop', loss='mse', loss_weights = [0.25, 100.0, 0.5, 200, 1.0, 400])
+    model.compile(optimizer=sgd, loss='mse', loss_weights = [0.25, 125, 0.5, 250, 1.0, 500.0])
     print(model.summary())
     return(model)
 def main():
@@ -211,6 +211,13 @@ def main():
         test_pose_tx = test['test_pose_tx'][:]
         test_pose_rt = test['test_pose_rt'][:]
         test.close()
+        # Modify the train and test data 
+        train_imgs = train_imgs[:894,:,:,:]
+        train_pose_tx = train_pose_tx[:894,:]
+        train_pose_rt = train_pose_rt[:894,:]
+        test_imgs = test_imgs[:181, :,:,:]
+        test_pose_tx = test_pose_tx[:181,:]
+        test_pose_rt = test_pose_rt[:181,:]
 
         #print(train_imgs[3,:,:,:])
 
@@ -220,7 +227,7 @@ def main():
         tb = TensorBoard(log_dir=tb_log_dir_name, histogram_freq=1,
         write_graph=True, write_images=True)
         model.fit(train_imgs, [train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt,train_pose_tx, train_pose_rt],
-        batch_size= batch_size, callbacks = [tb], epochs = num_epochs, shuffle=True)
+        batch_size= batch_size, callbacks = [tb], epochs = num_epochs, shuffle=False)
 
         model.save(model_name)
 
