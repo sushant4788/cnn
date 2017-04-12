@@ -27,7 +27,7 @@ from keras.callbacks import TensorBoard
 from keras import regularizers, optimizers
 from keras.initializers import RandomNormal
 from Local_Resp_Norm import LRN2D
-import gc, h5py
+import gc, h5py, os
 import keras.backend as K
 import posenet_preprocess
 import tensorflow as tf
@@ -36,8 +36,8 @@ import math
 
 use_dummy_ds = False
 use_gpu = True
-batch_size = 75
-num_epochs = 500
+batch_size = 1
+num_epochs = 10
 
 def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
 t2_f1=32, t3_f1=32):
@@ -94,7 +94,7 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     x = ZeroPadding2D((1,1))(x)
     x = Conv2D(192, (3, 3), activation= 'relu',
     kernel_initializer = RandomNormal(mean=0.0, stddev = 0.02), use_bias = True, kernel_regularizer=regularizers.l2(0.01), name = 'conv2')(x)
-    x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
+    #x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
     x = LRN2D()(x)
     #x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
 
@@ -167,6 +167,7 @@ def main():
     img_rows, img_cols, img_channels = 224, 224, 3
     base_dir = '/home/sushant/Downloads/Kings/'
     ds_dir = '/home/sushant/dataset_mod/'
+    ds_dir = '/home/sushant/sep_ds/'
     train_prefix = 'train.h5'
     test_prefix = 'test.h5'
     # GPU or CPU
@@ -200,7 +201,7 @@ def main():
         #train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = posenet_preprocess.load_train_test_splits(base_dir, img_rows,
         #img_cols, img_channels)
         # Read the hdf5 data
-        train = h5py.File(ds_dir+train_prefix, 'r')
+        '''train = h5py.File(ds_dir+train_prefix, 'r')
         train_imgs = train['train_imgs'][:]
         train_pose_tx = train['train_pose_tx'][:]
         train_pose_rt = train['train_pose_rt'][:]
@@ -211,7 +212,7 @@ def main():
         test_pose_tx = test['test_pose_tx'][:]
         test_pose_rt = test['test_pose_rt'][:]
         test.close()
-        # Modify the train and test data 
+        # Modify the train and test data
         train_imgs = train_imgs[:894,:,:,:]
         train_pose_tx = train_pose_tx[:894,:]
         train_pose_rt = train_pose_rt[:894,:]
@@ -219,7 +220,23 @@ def main():
         test_pose_tx = test_pose_tx[:181,:]
         test_pose_rt = test_pose_rt[:181,:]
 
-        #print(train_imgs[3,:,:,:])
+        #print(train_imgs[3,:,:,:])'''
+
+        location_list = ['KingsCollege', 'ShopFacade']
+        c_loc = location_list[1]
+        print('Training and Testing on the ', c_loc, ' dataset')
+        train = h5py.File(os.path.join(ds_dir, 'train_' + c_loc + '.h5'), 'r')
+        train_imgs = train['train_imgs'][:]
+        train_pose_tx = train['train_pose_tx'][:]
+        train_pose_rt = train['train_pose_rt'][:]
+        train.close()
+
+        test = h5py.File(os.path.join(ds_dir, 'test_' + c_loc + '.h5'), 'r')
+        test_imgs = test['test_imgs'][:]
+        test_pose_tx = test['test_pose_tx'][:]
+        test_pose_rt = test['test_pose_rt'][:]
+        test.close()
+
 
     with tf.device(device):
         model = inc_pose_net(img_rows, img_cols, img_channels)
