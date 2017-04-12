@@ -35,7 +35,7 @@ def read_imgs_and_pose(img_rows, img_cols, img_channels, txt_list, base_dir, is_
 
 
 def main():
-    base_dir = '/home/sushant/Downloads/Kings/' # location of the ds root dir
+    base_dir = '/home/sushant/Downloads/' # location of the ds root dir
     img_rows, img_cols, img_channels = 224, 224, 3
     train_txt_list, test_txt_list = posenet_preprocess.gather_train_test_txt_list(base_dir)
     read_imgs_and_pose(img_rows, img_cols, img_channels, train_txt_list, base_dir, True)
