@@ -178,9 +178,9 @@ def main():
     h5f.close()
 
     h5f = h5py.File('test.h5', 'w')
-    h5f.create_dataset('test_imgs', data=train_imgs, dtype='float32')
-    h5f.create_dataset('test_pose_tx', data=train_pose_tx, dtype='float32')
-    h5f.create_dataset('test_pose_rt', data=train_pose_rt, dtype='float32')
+    h5f.create_dataset('test_imgs', data=test_imgs, dtype='float32')
+    h5f.create_dataset('test_pose_tx', data=test_pose_tx, dtype='float32')
+    h5f.create_dataset('test_pose_rt', data=test_pose_rt, dtype='float32')
     h5f.close()
 
     #h5f = h5py.File('train.h5','r')
