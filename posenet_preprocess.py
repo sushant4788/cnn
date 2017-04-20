@@ -3,11 +3,13 @@ from PIL import Image
 import numpy as np
 import gc, glob, os, h5py, random
 #===========================================================================
+'''Resize the image to approximately half the size'''
 RESIZE_ROWS = 256
 RESIZE_COLS = 455
 #===========================================================================
 def create_dummy_ds(num_samples = 100, d_img_rows = 224, d_img_cols = 224, d_img_channels= 3):
-    # Creates a dummy ds for quickimg_list evaluation
+    '''# Creates a dummy ds for quickimg_list evaluation.'''
+
     train_imgs =    np.random.random((num_samples, d_img_rows, d_img_cols, d_img_channels)) # 100 images r,c, channels
     train_pose_tx = np.random.random((num_samples, 3)) # tx, ty, tz
     train_pose_rt = np.random.random((num_samples, 4)) # w, p, q, r quarternion
@@ -16,6 +18,7 @@ def create_dummy_ds(num_samples = 100, d_img_rows = 224, d_img_cols = 224, d_img
     test_pose_rt=   np.random.random((num_samples, 4)) # w, p, q
     return(train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,
     test_pose_rt)
+
 def test_only_splits(base_dir, img_rows, img_cols, img_channels):
     '''Generate the test only splits. Used incase the model is already trained
     and only needs to be tested'''
@@ -28,7 +31,6 @@ def test_only_splits(base_dir, img_rows, img_cols, img_channels):
     #test_imgs /=255
     return(test_imgs, test_pose_tx, test_pose_rt)
 
-#===============================================================================
 def read_pose_val_and_img_list(filename, base_dir):
     '''From the file, read the pose values and the list of images '''
     with open(filename) as f:
@@ -84,26 +86,6 @@ def read_testing_images(img_list, img_rows, img_cols, img_channels):
         imgs[i, :,:,:] = c_im
     return(imgs)
 
-def read_images(img_list, img_rows, img_cols, img_channels):
-    decision = False
-    imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels))
-    for i in range(0, len(img_list)):
-        im = Image.open(img_list[i])
-        if(decision == True):
-            np_im = np.asarray(im, dtype='float32')
-            y,x,ch = np_im.shape
-            c_y = np.floor(y/2)
-            c_x = np.floor(x/2)
-            s_y = int(np.floor(c_y - (img_rows/2)))
-            s_x = int(np.floor(c_x - (img_cols/2)))
-            c_im = np_im[s_y: s_y+img_rows, s_x: s_x+ img_cols, :]
-            imgs[i, :, :, :] = c_im
-        else:
-            im_r = im.resize((img_cols, img_rows), Image.BILINEAR)
-            np_im = np.asarray(im_r, dtype='float32')
-            imgs[i, :, :, :] = np_im
-    return(imgs)
-
 def gather_train_test_txt_list(base_dir):
     search_path = base_dir + '*/*.txt'
     txt_list = glob.glob(search_path)
@@ -127,17 +109,13 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir, is
             c_imgs = read_training_images(c_img_list, img_rows, img_cols, img_channels)
         else:
             c_imgs = read_testing_images(c_img_list, img_rows, img_cols, img_channels)
-        #c_imgs = read_images(c_img_list,  img_rows, img_cols, img_channels)
-        # Subtract the mean of the current group
-        c_imgs /= 255.0
-        c_imgs -= c_imgs.mean()
         if(i == 0):
             pose = c_pose
             images = c_imgs
         else:
             pose = np.concatenate((pose, c_pose), axis=0)
             images = np.concatenate((images, c_imgs), axis=0)
-    #print('total number samples: ', images.shape[0])
+
     return(images, pose)
 
 def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
@@ -145,18 +123,11 @@ def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
     train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir, True)
     test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir, False)
     # Preprocess the data and return the final arrays
-    #train_imgs = train_imgs.astype('float32')
-    #train_pose = train_pose.astype('float32')
     train_pose_tx = train_pose[:,:3]
     train_pose_rt = train_pose[:,3:]
 
-    #test_imgs = test_imgs.astype('float32')
-    #test_pose = test_pose.astype('float32')
     test_pose_tx = test_pose[:,:3]
     test_pose_rt = test_pose[:,3:]
-
-    #train_imgs /=255
-    #test_imgs /=255
 
     return(train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,
     test_pose_rt)
@@ -169,15 +140,20 @@ def main():
     # training_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_train_mod.txt'
     # testing_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_test_mod.txt'
     # dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
+    base_dir ='/home/sushant/Downloads/Kings/'
     base_dir ='/home/sushant/Downloads/'
     train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx, test_pose_rt = load_train_test_splits(base_dir, img_rows, img_cols, img_channels )
-    h5f = h5py.File('train.h5', 'w')
+    save_prefix = '/home/sushant/dataset_mod/'
+    train_path = os.path.join(save_prefix, 'train.h5')
+    test_path = os.path.join(save_prefix, 'test.h5')
+
+    h5f = h5py.File(train_path , 'w')
     h5f.create_dataset('train_imgs', data=train_imgs, dtype='float32')
     h5f.create_dataset('train_pose_tx', data=train_pose_tx, dtype='float32')
     h5f.create_dataset('train_pose_rt', data=train_pose_rt, dtype='float32')
     h5f.close()
 
-    h5f = h5py.File('test.h5', 'w')
+    h5f = h5py.File(test_path, 'w')
     h5f.create_dataset('test_imgs', data=test_imgs, dtype='float32')
     h5f.create_dataset('test_pose_tx', data=test_pose_tx, dtype='float32')
     h5f.create_dataset('test_pose_rt', data=test_pose_rt, dtype='float32')
@@ -194,3 +170,25 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+'''def read_images(img_list, img_rows, img_cols, img_channels):
+    #Legacy function to read images. Not used any more
+    decision = False
+    imgs = np.zeros((len(img_list), img_rows, img_cols, img_channels))
+    for i in range(0, len(img_list)):
+        im = Image.open(img_list[i])
+        if(decision == True):
+            np_im = np.asarray(im, dtype='float32')
+            y,x,ch = np_im.shape
+            c_y = np.floor(y/2)
+            c_x = np.floor(x/2)
+            s_y = int(np.floor(c_y - (img_rows/2)))
+            s_x = int(np.floor(c_x - (img_cols/2)))
+            c_im = np_im[s_y: s_y+img_rows, s_x: s_x+ img_cols, :]
+            imgs[i, :, :, :] = c_im
+        else:
+            im_r = im.resize((img_cols, img_rows), Image.BILINEAR)
+            np_im = np.asarray(im_r, dtype='float32')
+            imgs[i, :, :, :] = np_im
+    return(imgs) '''

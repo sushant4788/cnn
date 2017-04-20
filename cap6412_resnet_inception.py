@@ -15,29 +15,25 @@ import warnings
 from keras import layers
 from keras.layers import merge, Input
 from keras.layers import Dense, Activation, Flatten, Dropout
-from keras.layers import Conv2D, MaxPooling2D, ZeroPadding2D, AveragePooling2D
-from keras.layers import AveragePooling2D
-from keras.layers import BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D, ZeroPadding2D, AveragePooling2D, BatchNormalization
 from keras.models import Model
 from keras.preprocessing import image
 from keras.utils.layer_utils import convert_all_kernels_in_model
 from keras.utils.data_utils import get_file
-from imagenet_utils import decode_predictions, preprocess_input
+#from imagenet_utils import decode_predictions, preprocess_input
 from keras.callbacks import TensorBoard
 from keras import regularizers, optimizers
 from keras.initializers import RandomNormal
 from Local_Resp_Norm import LRN2D
-import gc, h5py, os
+import h5py, os, datetime, math, sys
 import keras.backend as K
 import posenet_preprocess
 import tensorflow as tf
-import datetime
-import math
 
 use_dummy_ds = False
 use_gpu = True
-batch_size = 1
-num_epochs = 10
+batch_size = 75
+num_epochs = 500
 
 def inception_net(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,
 t2_f1=32, t3_f1=32):
@@ -167,7 +163,7 @@ def main():
     img_rows, img_cols, img_channels = 224, 224, 3
     base_dir = '/home/sushant/Downloads/Kings/'
     ds_dir = '/home/sushant/dataset_mod/'
-    ds_dir = '/home/sushant/sep_ds/'
+    #ds_dir = '/home/sushant/sep_ds/'
     train_prefix = 'train.h5'
     test_prefix = 'test.h5'
     # GPU or CPU
@@ -198,41 +194,25 @@ def main():
         img_cols, img_channels)
     else:
         print('Using original ds')
-        #train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,test_pose_rt = posenet_preprocess.load_train_test_splits(base_dir, img_rows,
-        #img_cols, img_channels)
         # Read the hdf5 data
-        '''train = h5py.File(ds_dir+train_prefix, 'r')
+        #location_list = ['KingsCollege', 'ShopFacade']
+        #c_loc = location_list[1]
+        #print('Training and Testing on the ', c_loc, ' dataset')
+        #train = h5py.File(os.path.join(ds_dir, 'train_' + c_loc + '.h5'), 'r')
+        train = h5py.File(os.path.join(ds_dir, 'train.h5'), 'r')
         train_imgs = train['train_imgs'][:]
+        # save the subtract the mean of the training set from the train and the test set
+        ts_mean = train_imgs.mean()
+        train_imgs = train_imgs-ts_mean
         train_pose_tx = train['train_pose_tx'][:]
         train_pose_rt = train['train_pose_rt'][:]
         train.close()
 
-        test = h5py.File(ds_dir+test_prefix, 'r')
+        #test = h5py.File(os.path.join(ds_dir, 'test_' + c_loc + '.h5'), 'r')
+        test = h5py.File(os.path.join(ds_dir, 'test.h5'), 'r')
         test_imgs = test['test_imgs'][:]
-        test_pose_tx = test['test_pose_tx'][:]
-        test_pose_rt = test['test_pose_rt'][:]
-        test.close()
-        # Modify the train and test data
-        train_imgs = train_imgs[:894,:,:,:]
-        train_pose_tx = train_pose_tx[:894,:]
-        train_pose_rt = train_pose_rt[:894,:]
-        test_imgs = test_imgs[:181, :,:,:]
-        test_pose_tx = test_pose_tx[:181,:]
-        test_pose_rt = test_pose_rt[:181,:]
-
-        #print(train_imgs[3,:,:,:])'''
-
-        location_list = ['KingsCollege', 'ShopFacade']
-        c_loc = location_list[1]
-        print('Training and Testing on the ', c_loc, ' dataset')
-        train = h5py.File(os.path.join(ds_dir, 'train_' + c_loc + '.h5'), 'r')
-        train_imgs = train['train_imgs'][:]
-        train_pose_tx = train['train_pose_tx'][:]
-        train_pose_rt = train['train_pose_rt'][:]
-        train.close()
-
-        test = h5py.File(os.path.join(ds_dir, 'test_' + c_loc + '.h5'), 'r')
-        test_imgs = test['test_imgs'][:]
+        # Subtract the mean
+        test_imgs = test_imgs- ts_mean
         test_pose_tx = test['test_pose_tx'][:]
         test_pose_rt = test['test_pose_rt'][:]
         test.close()
@@ -245,14 +225,8 @@ def main():
         write_graph=True, write_images=True)
         model.fit(train_imgs, [train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt,train_pose_tx, train_pose_rt],
         batch_size= batch_size, callbacks = [tb], epochs = num_epochs, shuffle=False)
-
         model.save(model_name)
-
         p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict(test_imgs)
-        #p_tx_1, p_rx_1 = model.predict(test_imgs)
-        # print(p_tx_1)
-
-
         results = np.zeros((test_imgs.shape[0], 2), dtype = 'float32')
         for i in range(0, test_imgs.shape[0]):
             q2 = p_rx_3[i,:] / np.linalg.norm(p_rx_3[i,:])
@@ -267,15 +241,28 @@ def main():
         print('Median error degrees: ', median_result[1])
         np.savetxt('results.txt', results, delimiter=' ')
         print( 'Success!')
-
         K.clear_session()
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     main()
+
+
+'''train = h5py.File(ds_dir+train_prefix, 'r')
+train_imgs = train['train_imgs'][:]
+train_pose_tx = train['train_pose_tx'][:]
+train_pose_rt = train['train_pose_rt'][:]
+train.close()
+
+test = h5py.File(ds_dir+test_prefix, 'r')
+test_imgs = test['test_imgs'][:]
+test_pose_tx = test['test_pose_tx'][:]
+test_pose_rt = test['test_pose_rt'][:]
+test.close()
+# Modify the train and test data
+train_imgs = train_imgs[:894,:,:,:]
+train_pose_tx = train_pose_tx[:894,:]
+train_pose_rt = train_pose_rt[:894,:]
+test_imgs = test_imgs[:181, :,:,:]
+test_pose_tx = test_pose_tx[:181,:]
+test_pose_rt = test_pose_rt[:181,:]
+
+#print(train_imgs[3,:,:,:])'''
