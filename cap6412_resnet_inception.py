@@ -195,28 +195,19 @@ def main():
     else:
         print('Using original ds')
         # Read the hdf5 data
-        location_list = ['OldHospital', 'StMarysChurch', 'KingsCollege', 'Street', 'ShopFacade']
-        c_loc = location_list[2]
-        print('Training and Testing on the ', c_loc, ' dataset')
-        #train = h5py.File(os.path.join(ds_dir, 'train_' + c_loc + '.h5'), 'r')
-        #train = h5py.File(os.path.join(ds_dir, 'train.h5'), 'r')
-        #train_imgs = train['train_imgs'][:]
-        # save the subtract the mean of the training set from the train and the test set
-        ts_mean = train_imgs.mean()
-        train_imgs = train_imgs-ts_mean
-        train_pose_tx = train['train_pose_tx'][:]
-        train_pose_rt = train['train_pose_rt'][:]
-        train.close()
-
-        test = h5py.File(os.path.join(ds_dir, 'test_' + c_loc + '.h5'), 'r')
-        #test = h5py.File(os.path.join(ds_dir, 'test.h5'), 'r')
-        test_imgs = test['test_imgs'][:]
-        # Subtract the mean
-        test_imgs = test_imgs- ts_mean
-        test_pose_tx = test['test_pose_tx'][:]
-        test_pose_rt = test['test_pose_rt'][:]
-        test.close()
-
+        landmarks_dir = '/home/sushant/landmarks_seperate/'
+        dataset_name = sys.argv[1]
+        dataset_fullfile = landmarks_dir+sys.argsv[1]+'.h5'
+        print('Using ', dataset_fullfile)
+        f = h5py.File(dataset_fullfile,'r')
+        train_imgs = f['train_imgs'][:]
+        train_imgs -= train_imgs.mean()
+        train_pose_tx = f['train_pose_tx'][:]
+        train_pose_rt = f['train_pose_rt'][:]
+        test_imgs = f['test_imgs'][:]
+        test_pose_tx = f['test_pose_tx'][:]
+        test_pose_rt = f['test_pose_rt'][:]
+        test_imgs -= train_imgs.mean()
 
     with tf.device(device):
         model = inc_pose_net(img_rows, img_cols, img_channels)
@@ -245,6 +236,27 @@ def main():
 if __name__ == '__main__':
     main()
 
+'''location_list = ['OldHospital', 'StMarysChurch', 'KingsCollege', 'Street', 'ShopFacade']
+c_loc = location_list[2]
+print('Training and Testing on the ', c_loc, ' dataset')
+train = h5py.File(os.path.join(ds_dir, 'train_' + c_loc + '.h5'), 'r')
+#train = h5py.File(os.path.join(ds_dir, 'train.h5'), 'r')
+#train_imgs = train['train_imgs'][:]
+# save the subtract the mean of the training set from the train and the test set
+ts_mean = train_imgs.mean()
+train_imgs = train_imgs-ts_mean
+train_pose_tx = train['train_pose_tx'][:]
+train_pose_rt = train['train_pose_rt'][:]
+train.close()
+
+test = h5py.File(os.path.join(ds_dir, 'test_' + c_loc + '.h5'), 'r')
+#test = h5py.File(os.path.join(ds_dir, 'test.h5'), 'r')
+test_imgs = test['test_imgs'][:]
+# Subtract the mean
+test_imgs = test_imgs- ts_mean
+test_pose_tx = test['test_pose_tx'][:]
+test_pose_rt = test['test_pose_rt'][:]
+test.close()'''
 
 '''train = h5py.File(ds_dir+train_prefix, 'r')
 train_imgs = train['train_imgs'][:]
