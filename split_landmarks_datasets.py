@@ -6,6 +6,9 @@ import numpy as np
 
 def main():
     write_dir = 'landmarks_seperate/'
+    ds_dir = '/home/sushant/dataset_mod/'
+    train_file_name = ds_dir+'train.h5'
+    test_file_name = ds_dir+ 'test.h5'
     # name of the locations
     location_list = ['OldHospital', 'StMarysChurch', 'KingsCollege', 'Street', 'ShopFacade']
     tr_locs = [0, 895, 2382, 3602, 6617, 6848]
@@ -15,11 +18,15 @@ def main():
     train_imgs = train['train_imgs'][:]
     train_pose_tx = train['train_pose_tx'][:]
     train_pose_rt = train['train_pose_rt'][:]
+    print('TRAIN set has ', train_imgs.shape[0], ' number of images')
+
     train.close()
     test = h5py.File(test_file_name, 'r')
     test_imgs = test['test_imgs'][:]
     test_pose_tx = test['test_pose_tx'][:]
     test_pose_rt = test['test_pose_rt'][:]
+    print('TEST set has ', test_imgs.shape[0], ' number of images')
+
     test.close()
     for i in range(0, len(location_list)):
         print(location_list[i])
