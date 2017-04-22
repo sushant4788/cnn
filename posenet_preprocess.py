@@ -120,6 +120,7 @@ def read_image_and_pose(txt_list, img_rows, img_cols, img_channels, base_dir, is
 
 def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
     train_txt_list, test_txt_list = gather_train_test_txt_list(base_dir)
+
     train_imgs, train_pose = read_image_and_pose(train_txt_list, img_rows, img_cols, img_channels, base_dir, True)
     test_imgs, test_pose = read_image_and_pose(test_txt_list, img_rows, img_cols, img_channels, base_dir, False)
     # Preprocess the data and return the final arrays
@@ -131,7 +132,8 @@ def load_train_test_splits(base_dir, img_rows, img_cols, img_channels):
 
     return(train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx,
     test_pose_rt)
-
+    #for i in range(0, len(train_txt_list)):
+    #    print(train_txt_list[i])
 
 def main():
     # Set some hardcoded sizes
@@ -141,9 +143,9 @@ def main():
     # testing_file = '/home/sushant/Downloads/Kings/KingsCollege/dataset_test_mod.txt'
     # dataset_location ='/home/sushant/Downloads/Kings/KingsCollege/'
     base_dir ='/home/sushant/Downloads/Kings/'
-    base_dir ='/home/sushant/Downloads/'
+    #base_dir ='/home/sushant/Downloads/'
     train_imgs, train_pose_tx, train_pose_rt, test_imgs, test_pose_tx, test_pose_rt = load_train_test_splits(base_dir, img_rows, img_cols, img_channels )
-    save_prefix = '/home/sushant/dataset_mod/'
+    save_prefix = '/home/sushant/dataset_mod_some_other/'
     train_path = os.path.join(save_prefix, 'train.h5')
     test_path = os.path.join(save_prefix, 'test.h5')
 
