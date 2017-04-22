@@ -11,7 +11,7 @@ def main():
     test_file_name = ds_dir+ 'test.h5'
     # name of the locations
     location_list = ['OldHospital', 'StMarysChurch', 'KingsCollege', 'Street', 'ShopFacade']
-    tr_locs = [0, 895, 2382, 3602, 6617, 6848]
+    tr_loc = [0, 895, 2382, 3602, 6617, 6848]
     ts_loc = [0, 182, 712, 1055, 3978, 4081]
     # Load the complete train and the testing set
     train = h5py.File(train_file_name, 'r')
@@ -30,13 +30,13 @@ def main():
     test.close()
     for i in range(0, len(location_list)):
         print(location_list[i])
-        ds_tr_imgs = train_imgs[ts_loc[i]:ts_loc[i+1],:,:,:]
-        ds_tr_pose_tx = train_pose_tx[ts_loc[i]:ts_loc[i+1],:]
-        ds_tr_pose_rt = train_pose_rt[ts_loc[i]:ts_loc[i+1],:]
+        ds_tr_imgs = train_imgs[tr_loc[i]:tr_loc[i+1],:,:,:]
+        ds_tr_pose_tx = train_pose_tx[tr_loc[i]:tr_loc[i+1],:]
+        ds_tr_pose_rt = train_pose_rt[tr_loc[i]:tr_loc[i+1],:]
         print('current train set has ', ds_tr_imgs.shape[0], ' number of images')
-        ds_ts_imgs = test_imgs[tr_loc[i]:tr_loc[i+1], :,:,:]
-        ds_ts_pose_tx = test_pose_tx[tr_loc[i]:tr_loc[i+1],:]
-        ds_ts_pose_rt = test_pose_rt[tr_loc[i]:tr_loc[i+1],:]
+        ds_ts_imgs = test_imgs[ts_loc[i]:ts_loc[i+1], :,:,:]
+        ds_ts_pose_tx = test_pose_tx[ts_loc[i]:ts_loc[i+1],:]
+        ds_ts_pose_rt = test_pose_rt[ts_loc[i]:ts_loc[i+1],:]
         print('current test set has ', ds_ts_imgs.shape[0], ' number of images')
         # save the training dataset
         h5f = h5py.File(write_dir+location_list[i]+'.h5', 'w')
