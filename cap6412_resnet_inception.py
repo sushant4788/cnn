@@ -25,6 +25,7 @@ from keras.callbacks import TensorBoard
 from keras import regularizers, optimizers
 from keras.initializers import RandomNormal
 from Local_Resp_Norm import LRN2D
+from keras.callbacks import EarlyStopping
 import h5py, os, datetime, math, sys
 import keras.backend as K
 import posenet_preprocess
@@ -155,6 +156,9 @@ def inc_pose_net(img_rows, img_cols, img_channels):
     print(model.summary())
     return(model)
 def main():
+    location_list = ['OldHospital', 'StMarysChurch', 'KingsCollege', 'Street', 'ShopFacade']
+    if(len(sys.argv)<2):
+        print(location_list)
     # ==========================================================================
     # initialization Params go here !!
     # ==========================================================================
@@ -197,7 +201,7 @@ def main():
         # Read the hdf5 data
         landmarks_dir = '/home/sushant/landmarks_seperate/'
         dataset_name = sys.argv[1]
-        dataset_fullfile = landmarks_dir+sys.argsv[1]+'.h5'
+        dataset_fullfile = landmarks_dir+sys.argv[1]+'.h5'
         print('Using ', dataset_fullfile)
         f = h5py.File(dataset_fullfile,'r')
         train_imgs = f['train_imgs'][:]
@@ -207,15 +211,17 @@ def main():
         test_imgs = f['test_imgs'][:]
         test_pose_tx = f['test_pose_tx'][:]
         test_pose_rt = f['test_pose_rt'][:]
-        test_imgs -= train_imgs.mean()
+        test_imgs -= test_imgs.mean()
 
     with tf.device(device):
         model = inc_pose_net(img_rows, img_cols, img_channels)
         # Use TensorBoard to generate graphs of loss
         tb = TensorBoard(log_dir=tb_log_dir_name, histogram_freq=1,
         write_graph=True, write_images=True)
+        # Use the Early stopping 
+        early_stopping = EarlyStopping(monitor='loss', patience=10, mode = 'auto')
         model.fit(train_imgs, [train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt,train_pose_tx, train_pose_rt],
-        batch_size= batch_size, callbacks = [tb], epochs = num_epochs, shuffle=False)
+        batch_size= batch_size, callbacks = [tb, early_stopping], epochs = num_epochs, shuffle=True)
         model.save(model_name)
         p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict(test_imgs)
         results = np.zeros((test_imgs.shape[0], 2), dtype = 'float32')
