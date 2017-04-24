@@ -3,10 +3,10 @@ feature extraction and the GRU recurrent unit for pose regression. The input is
 the landmarks sequence from the ICCV 2015paper posenet '''
 
 from __future__ import print_function
-import numpy as np
-from keras.models import Models
-from keras.layers import Recurrent
-from keras.layers import ZeroPadding2D, Conv2D, MaxPooling2D, AveragePooling2D
+#import numpy as np
+#from keras.models import Model
+#from keras.layers import Recurrent
+'''from keras.layers import ZeroPadding2D, Conv2D, MaxPooling2D, AveragePooling2D
 from keras.layers import BatchNormalization, Dense, Activation, Flatten, Dropout
 from keras.callbacks import Tensorboard
 from keras import regularizers, optimizers
@@ -15,7 +15,29 @@ from Local_Resp_Norm import LRN2D
 import h5py, os, datetime, math, sys
 import keras.backend as K
 import posenet_preprocess
+import tensorflow as tf'''
+#from __future__ import print_function
+import numpy as np
+import warnings
+from keras import layers
+from keras.layers import merge, Input
+from keras.layers import Dense, Activation, Flatten, Dropout
+from keras.layers import Conv2D, MaxPooling2D, ZeroPadding2D, AveragePooling2D, BatchNormalization
+from keras.models import Model
+from keras.preprocessing import image
+from keras.utils.layer_utils import convert_all_kernels_in_model
+from keras.utils.data_utils import get_file
+#from imagenet_utils import decode_predictions, preprocess_input
+from keras.callbacks import TensorBoard
+from keras import regularizers, optimizers
+from keras.initializers import RandomNormal
+from Local_Resp_Norm import LRN2D
+from keras.layers import GRU
+import h5py, os, datetime, math, sys
+import keras.backend as K
+import posenet_preprocess
 import tensorflow as tf
+
 import cap6412_resnet_inception
 use_dummy_ds = False
 use_gpu = True
@@ -57,11 +79,12 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     y  = Flatten()(y)
+    print('shape of y: ', y.shape)	    
     # Use the GRU unit
     y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     #y = Dense(1024, use_bias= True, name='cls1_fc1_pose',
     # activation='relu'
-    activation= 'tanh')(y)
+    # activation= 'tanh')(y)
     y = Dropout(0.7)(y)
     tx_1 = Dense(3, name='tx_1', use_bias = True, kernel_initializer=
     RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y)
@@ -75,14 +98,14 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y  = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op2)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y  = Flatten()(y)
+    #y  = Flatten()(y)
     # Mod: Changing the activation to tanh
 
     # Use the GRU unit
     y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     #y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
     #activation='relu'
-    activation='tanh')(y)
+    #activation='tanh')(y)
     y = Dropout(0.7)(y)
     tx_2 = Dense(3, name='tx_2', use_bias = True, kernel_initializer=
     RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y)
@@ -99,10 +122,10 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     # Changing the activation to tanh
 
     # Use the GRU unit
-    y = GRU(2048,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
+    y = GRU(2048,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(op3)
     # y  = Dense(2048, use_bias = True, name='cls3_fc1_pose',
     # activation='relu'
-    activation = 'tanh')(y)
+    # activation = 'tanh')(y)
     y = Dropout(0.5)(y)
 
     tx_3 = Dense(3, name='tx_3', use_bias = True, kernel_initializer=
@@ -125,7 +148,7 @@ def main():
         num_samples = 20
         #img_rows, img_cols, img_channels = 256, 455, 3
         img_rows, img_cols, img_channels = 224, 224, 3
-        base_dir = '/home/sushant/Downloads/Kings/'
+        base_dir = '/home/sushant/Downloads/'
         ds_dir = '/home/sushant/dataset_mod/'
         #ds_dir = '/home/sushant/sep_ds/'
         train_prefix = 'train.h5'
@@ -161,7 +184,7 @@ def main():
             # Read the hdf5 data
             landmarks_dir = '/home/sushant/landmarks_seperate/'
             dataset_name = sys.argv[1]
-            dataset_fullfile = landmarks_dir+sys.argsv[1]+'.h5'
+            dataset_fullfile = landmarks_dir+sys.argv[1]+'.h5'
             print('Using ', dataset_fullfile)
             f = h5py.File(dataset_fullfile,'r')
             train_imgs = f['train_imgs'][:]
