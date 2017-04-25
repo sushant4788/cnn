@@ -3,20 +3,7 @@ feature extraction and the GRU recurrent unit for pose regression. The input is
 the landmarks sequence from the ICCV 2015paper posenet '''
 
 from __future__ import print_function
-#import numpy as np
-#from keras.models import Model
-#from keras.layers import Recurrent
-'''from keras.layers import ZeroPadding2D, Conv2D, MaxPooling2D, AveragePooling2D
-from keras.layers import BatchNormalization, Dense, Activation, Flatten, Dropout
-from keras.callbacks import Tensorboard
-from keras import regularizers, optimizers
-from keras.initializers import RandomNormal
-from Local_Resp_Norm import LRN2D
-import h5py, os, datetime, math, sys
-import keras.backend as K
-import posenet_preprocess
-import tensorflow as tf'''
-#from __future__ import print_function
+
 import numpy as np
 import warnings
 from keras import layers
@@ -37,16 +24,16 @@ import h5py, os, datetime, math, sys
 import keras.backend as K
 import posenet_preprocess
 import tensorflow as tf
+from keras.layers import Reshape
 
 import cap6412_resnet_inception
 use_dummy_ds = False
-use_gpu = True
+use_gpu = False
 batch_size = 75
 num_epochs = 500
 def gru_pose_net(img_rows, img_cols, img_channels):
     '''Inception net model to be tested on pose regression on monocular images
     using the landmarks images and the GRU unit for pose regression'''
-
     img_input = Input(shape=(img_rows, img_cols, img_channels))
     if K.image_dim_ordering() == 'th':
         bn_axis = 1
@@ -68,7 +55,7 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     kernel_initializer = RandomNormal(mean=0.0, stddev = 0.02), use_bias = True, kernel_regularizer=regularizers.l2(0.01), name = 'conv2')(x)
     x = BatchNormalization(axis = bn_axis, name='bn_2')(x)
     #x = LRN2D()(x)
-    #x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
+    x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
 
     x = cap6412_resnet_inception.inception_net(x, 64, 96, 128, 16, 32, 32) # 1
     x = cap6412_resnet_inception.inception_net(x, 128, 128, 192, 96, 64) # 2
@@ -78,11 +65,10 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op1)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y  = Flatten()(y)
-    print('shape of y: ', y.shape)	    
-    # Use the GRU unit
+    y = Reshape((1,-1))(y)
     y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    #y = Dense(1024, use_bias= True, name='cls1_fc1_pose',
+
+    # Remove the Flatten net and add the reshape
     # activation='relu'
     # activation= 'tanh')(y)
     y = Dropout(0.7)(y)
@@ -98,10 +84,7 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y  = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op2)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    #y  = Flatten()(y)
-    # Mod: Changing the activation to tanh
-
-    # Use the GRU unit
+    y = Reshape((1,-1))(y)
     y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     #y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
     #activation='relu'
@@ -118,11 +101,9 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     x = cap6412_resnet_inception.inception_net(x, 384, 192, 384, 48, 128, 128) #9
     # Final classification net
     op3 = AveragePooling2D((5,5), name ='AveragePooling')(x)
-    y  = Flatten()(op3)
-    # Changing the activation to tanh
-
-    # Use the GRU unit
-    y = GRU(2048,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(op3)
+    #y  = Flatten()(op3)
+    y = Reshape((1,-1))(op3)
+    y = GRU(2048,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
     # y  = Dense(2048, use_bias = True, name='cls3_fc1_pose',
     # activation='relu'
     # activation = 'tanh')(y)
