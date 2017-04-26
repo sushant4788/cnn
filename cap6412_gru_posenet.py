@@ -28,7 +28,7 @@ from keras.layers import Reshape
 
 import cap6412_resnet_inception
 use_dummy_ds = False
-use_gpu = False
+use_gpu = True
 batch_size = 75
 num_epochs = 500
 def gru_pose_net(img_rows, img_cols, img_channels):
@@ -65,19 +65,20 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op1)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    #y = Reshape((1,-1))(y)
-    #y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = Flatten()(y)
-    y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
-    activation='tanh')(y)
+    y1 = Reshape((1,-1))(y)
+    y1 = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y1)
+    y2= Flatten()(y)
+    y2 = Dense(1024, use_bias= True, name='cls1_fc1_pose',
+    activation='tanh')(y2)
     # Remove the Flatten net and add the reshape
     # activation='relu'
     # activation= 'tanh')(y)
-    y = Dropout(0.7)(y)
+    y1 = Dropout(0.7)(y1)
+    y2 = Dropout(0.7)(y2)
     tx_1 = Dense(3, name='tx_1', use_bias = True, kernel_initializer=
-    RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y)
+    RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y1)
     rx_1 = Dense(4, name='rx_1', use_bias = True, kernel_initializer=
-    RandomNormal(mean=0.0, stddev=0.01), kernel_regularizer=regularizers.l2(0.01))(y)
+    RandomNormal(mean=0.0, stddev=0.01), kernel_regularizer=regularizers.l2(0.01))(y2)
 
     x = cap6412_resnet_inception.inception_net(op1, 160, 112, 224, 24, 64, 64) # 4
     x = cap6412_resnet_inception.inception_net(x, 128, 128, 256, 24, 24, 64) # 5
@@ -86,20 +87,20 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y  = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op2)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    #y = Reshape((1,-1))(y)
-    #y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = Flatten()(y)
-    y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
-    activation='tanh')(y)
+    y1 = Reshape((1,-1))(y)
+    y1 = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y1)
+    y2 = Flatten()(y)
+    #y2 = Dense(1024, use_bias= True, name='cls2_fc1_pose',
+    #activation='tanh')(y2)
 
-    #y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
-    #activation='relu'
-    #activation='tanh')(y)
-    y = Dropout(0.7)(y)
+    y2 = Dense(1024, use_bias= True, name='cls2_fc1_pose',
+    activation='tanh')(y2)
+    y1 = Dropout(0.7)(y1)
+    y2 = Dropout(0.7)(y2)
     tx_2 = Dense(3, name='tx_2', use_bias = True, kernel_initializer=
-    RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y)
+    RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y1)
     rx_2 = Dense(4, name='rx_2', use_bias = True, kernel_initializer=
-    RandomNormal(mean=0.0, stddev=0.01), kernel_regularizer=regularizers.l2(0.01))(y)
+    RandomNormal(mean=0.0, stddev=0.01), kernel_regularizer=regularizers.l2(0.01))(y2)
 
     x = cap6412_resnet_inception.inception_net(op2, 256, 160, 320, 32, 128, 128) #7
     x = MaxPooling2D(pool_size=(3,3), strides=(2,2))(x)
@@ -107,18 +108,16 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     x = cap6412_resnet_inception.inception_net(x, 384, 192, 384, 48, 128, 128) #9
     # Final classification net
     op3 = AveragePooling2D((5,5), name ='AveragePooling')(x)
-    #y  = Flatten()(op3)
-    y = Reshape((1,-1))(op3)
-    y = GRU(2048,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    # y  = Dense(2048, use_bias = True, name='cls3_fc1_pose',
-    # activation='relu'
-    # activation = 'tanh')(y)
-    y = Dropout(0.5)(y)
-
+    y1 = Reshape((1,-1))(op3)
+    y2  = Flatten()(op3)
+    y1 = GRU(2048,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y1)
+    y2  = Dense(2048, use_bias = True, name='cls3_fc1_pose',activation = 'tanh')(y2)
+    y1 = Dropout(0.5)(y1)
+    y2 = Dropout(0.5)(y2)
     tx_3 = Dense(3, name='tx_3', use_bias = True, kernel_initializer=
-    RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y)
+    RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01))(y1)
     rx_3 = Dense(4, name='rx_3', use_bias = True, kernel_initializer=
-    RandomNormal(mean=0.0, stddev=0.01), kernel_regularizer=regularizers.l2(0.01))(y)
+    RandomNormal(mean=0.0, stddev=0.01), kernel_regularizer=regularizers.l2(0.01))(y1)
 
     # Build the model, print summary !!
     model = Model(inputs=img_input, outputs=[tx_1, rx_1, tx_2, rx_2, tx_3, rx_3])
