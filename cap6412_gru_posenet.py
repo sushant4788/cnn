@@ -65,9 +65,11 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op1)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = Reshape((1,-1))(y)
-    y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-
+    #y = Reshape((1,-1))(y)
+    #y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
+    y = Flatten()(y)
+    y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
+    activation='tanh')(y)
     # Remove the Flatten net and add the reshape
     # activation='relu'
     # activation= 'tanh')(y)
@@ -84,8 +86,12 @@ def gru_pose_net(img_rows, img_cols, img_channels):
     y  = AveragePooling2D(pool_size=(5,5), strides=(3,3))(op2)
     y = Conv2D(128, (1,1), use_bias= True, activation='relu',
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = Reshape((1,-1))(y)
-    y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
+    #y = Reshape((1,-1))(y)
+    #y = GRU(1024,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
+    y = Flatten()(y)
+    y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
+    activation='tanh')(y)
+
     #y = Dense(1024, use_bias= True, name='cls2_fc1_pose',
     #activation='relu'
     #activation='tanh')(y)
