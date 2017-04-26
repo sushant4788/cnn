@@ -105,7 +105,7 @@ def read_test_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_chann
         imgs[j, :,:,:] = c_im
         if(j == 0):
             p_imgs[j,:,:,:] = c_im
-         else:
+        else:
              p_imgs[j-1,:,:,:] = c_im
     return(imgs, p_imgs)
 
