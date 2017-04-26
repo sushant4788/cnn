@@ -96,7 +96,7 @@ def read_test_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_chann
         im = Image.open(c_seq_imgs[j])
         im_r = im.resize((RESIZE_COLS, RESIZE_ROWS), Image.BILINEAR)
         np_im = np.asarray(im_r, dtype='float32')
-        y, x, c = np_im.shape
+        y, x = np_im.shape
         c_y = np.floor(y/2)
         c_x = np.floor(x/2)
         s_y = int(np.floor(c_y - (img_rows/2)))
