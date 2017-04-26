@@ -62,6 +62,8 @@ def read_train_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_chan
     num_frames = len(c_seq_imgs)
     print('current seq has :' , num_frames, ' of frames')
     imgs = np.zeros((num_frames, img_rows, img_cols, img_channels), dtype='float32')
+    # previous images
+    p_imgs = np.zeros((num_frames, img_rows, img_cols, img_channels), dtype='float32')
     c_im = np.zeros((img_rows, img_cols,1), dtype = 'float32')
     for j in range(0, num_frames):
         im = Image.open(c_seq_imgs[j])
@@ -74,7 +76,11 @@ def read_train_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_chan
         #print('===', s_y+img_rows, s_x+img_cols)
         c_im[:,:,0] = np_im[s_y: s_y+img_rows, s_x:s_x+img_cols]
         imgs[j,:,:,:] = c_im
-    return(imgs)
+        if(j == 0):
+            p_imgs[j,:,:,:] = c_im
+        else:
+            p_imgs[j-1,:,:,:] = c_im
+    return(imgs, p_imgs)
 
 
 def read_test_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_channels):
@@ -84,6 +90,7 @@ def read_test_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_chann
     num_frames = len(c_seq_imgs)
     print('current seq has :' , num_frames, ' of frames')
     imgs = np.zeros((num_frames, img_rows, img_cols, img_channels), dtype='float32')
+    p_imgs = np.zeros((num_frames, img_rows, img_cols, img_channels), dtype='float32')
     c_im = np.zeros((img_rows, img_cols,1), dtype = 'float32')
     for j in range(0, num_frames):
         im = Image.open(c_seq_imgs[j])
@@ -95,8 +102,12 @@ def read_test_images_from_seq_dir(ds_dir, seq_dir, img_rows, img_cols, img_chann
         s_y = int(np.floor(c_y - (img_rows/2)))
         s_x = int(np.floor(c_x - (img_cols/2)))
         c_im[:,:,0] = np_im[s_y: s_y+img_rows, s_x: s_x+ img_cols]
-        imgs[i, :,:,:] = c_im
-    return(imgs)
+        imgs[j, :,:,:] = c_im
+        if(j == 0):
+            p_imgs[j,:,:,:] = c_im
+         else:
+             p_imgs[j-1,:,:,:] = c_im
+    return(imgs, p_imgs)
 
 def create_KITTI_dataset(img_rows, img_cols, img_channels):
     '''Dataset is the KITTI dataset. The data is organized as follows
@@ -126,48 +137,54 @@ def create_KITTI_dataset(img_rows, img_cols, img_channels):
         if(i < train_split):
             # Training set
             print('adding to train')
-            c_imgs =read_train_images_from_seq_dir(ds_dir, sorted_seq_folders[i],
+            c_imgs, p_imgs  =read_train_images_from_seq_dir(ds_dir, sorted_seq_folders[i],
             img_rows, img_cols, img_channels)
             # Subtract the mean
-            c_imgs -= c_imgs.mean()
+            # c_imgs -= c_imgs.mean()
             c_r_R, c_r_T = read_R_and_T_from_current_seq(ps_search_txt_list[i])
 
             if(i ==0):
                 train_imgs = c_imgs
+                train_p_imgs = p_imgs
                 train_R = c_r_R
                 train_T = c_r_T
             else:
                 train_imgs = np.concatenate((train_imgs, c_imgs), axis=0)
+                train_p_imgs = np.concatenate((train_p_imgs, p_imgs), axis=0)
                 train_R = np.concatenate((train_R, c_r_R), axis =0)
                 train_T = np.concatenate((train_T, c_r_T), axis =0)
         else:
             print('adding to test')
-            c_imgs = read_test_images_from_seq_dir(ds_dir, sorted_seq_folders[i],
+            c_imgs, p_imgs = read_test_images_from_seq_dir(ds_dir, sorted_seq_folders[i],
             img_rows, img_cols, img_channels)
             if(i == train_split):
                 test_imgs = c_imgs
+                test_p_imgs = p_imgs
                 r_R = c_r_R
                 r_T = c_r_T
             else:
                 test_imgs = np.concatenate((test_imgs, c_imgs), axis =0)
+                test_p_imgs = np.concatenate((test_p_imgs, p_imgs), axis=0)
                 test_R = np.concatenate((test_R, c_r_R), axis =0)
                 test_T = np.concatenate((test_T, c_r_T), axis =0)
     print('Train imgs shape: ', train_imgs.shape, ' and test imgs shape is : ', test_imgs.shape)
-    return(train_imgs, train_R, train_T, test_imgs, test_R, test_T)
+    return(train_imgs, train_p_imgs, train_R, train_T, test_imgs, test_p_imgs, test_R, test_T)
 
 def main():
     '''Preprocess the dataset first'''
     img_rows, img_cols, img_channels = 224, 224, 3
-    train_imgs, train_R, train_T, test_imgs, test_R, test_T = create_KITTI_dataset(img_rows, img_cols, img_channels)
+    train_imgs, test_p_imgs, train_R, train_T, test_imgs, test_p_imgs, test_R, test_T = create_KITTI_dataset(img_rows, img_cols, img_channels)
     # save the data in h5 format
     h5f = h5py.File('train.h5', 'w')
     h5f.create_dataset('train_imgs', data=train_imgs, dtype='float32')
+    h5f.create_dataset('train_p_imgs', data=train_p_imgs, dtype='float32')
     h5f.create_dataset('train_R', data=train_R, dtype='float32')
     h5f.create_dataset('train_T', data=train_T, dtype='float32')
     h5f.close()
 
     h5f = h5py.File('test.h5', 'w')
     h5f.create_dataset('test_imgs', data=test_imgs, dtype='float32')
+    h5f.create_dataset('test_p_imgs', data=test_p_imgs, dtype='float32')
     h5f.create_dataset('test_R', data=test_R, dtype='float32')
     h5f.create_dataset('test_T', data=test_T, dtype='float32')
     h5f.close()
