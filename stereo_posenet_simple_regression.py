@@ -27,9 +27,9 @@ from keras.layers import Reshape
 import cap6412_resnet_inception
 #import inception_v3
 use_dummy_ds = False
-use_gpu = False
-batch_size = 1
-num_epochs = 10
+use_gpu = True
+batch_size = 75
+num_epochs = 250
 def base_features(img_input):
     if(K.image_dim_ordering =='th'):
         bn_axis = 1

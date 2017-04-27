@@ -172,8 +172,10 @@ def create_KITTI_dataset(img_rows, img_cols, img_channels):
 
 def main():
     '''Preprocess the dataset first'''
-    img_rows, img_cols, img_channels = 224, 224, 3
+    img_rows, img_cols, img_channels = 224, 224, 1
     train_imgs, train_p_imgs, train_R, train_T, test_imgs, test_p_imgs, test_R, test_T = create_KITTI_dataset(img_rows, img_cols, img_channels)
+    print(train_p_imgs.shape)
+    print(test_p_imgs.shape)	    
     # save the data in h5 format
     h5f = h5py.File('train.h5', 'w')
     h5f.create_dataset('train_imgs', data=train_imgs, dtype='float32')
