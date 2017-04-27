@@ -160,8 +160,8 @@ def create_KITTI_dataset(img_rows, img_cols, img_channels):
             if(i == train_split):
                 test_imgs = c_imgs
                 test_p_imgs = p_imgs
-                r_R = c_r_R
-                r_T = c_r_T
+                test_R = c_r_R
+                test_T = c_r_T
             else:
                 test_imgs = np.concatenate((test_imgs, c_imgs), axis =0)
                 test_p_imgs = np.concatenate((test_p_imgs, p_imgs), axis=0)
@@ -173,7 +173,7 @@ def create_KITTI_dataset(img_rows, img_cols, img_channels):
 def main():
     '''Preprocess the dataset first'''
     img_rows, img_cols, img_channels = 224, 224, 3
-    train_imgs, test_p_imgs, train_R, train_T, test_imgs, test_p_imgs, test_R, test_T = create_KITTI_dataset(img_rows, img_cols, img_channels)
+    train_imgs, train_p_imgs, train_R, train_T, test_imgs, test_p_imgs, test_R, test_T = create_KITTI_dataset(img_rows, img_cols, img_channels)
     # save the data in h5 format
     h5f = h5py.File('train.h5', 'w')
     h5f.create_dataset('train_imgs', data=train_imgs, dtype='float32')
