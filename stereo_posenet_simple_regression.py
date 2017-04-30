@@ -29,7 +29,7 @@ import cap6412_resnet_inception
 use_dummy_ds = False
 use_gpu = True
 batch_size = 75
-num_epochs = 250
+num_epochs = 75
 def base_features(img_input):
     if(K.image_dim_ordering =='th'):
         bn_axis = 1
@@ -232,10 +232,12 @@ def main():
         # Use the Early stopping
         early_stopping = EarlyStopping(monitor='loss', patience=10, mode = 'auto')
         model.fit([train_imgs, train_p_imgs], [train_tx, train_rt, train_tx, train_rt,train_tx, train_rt],
-        batch_size= batch_size, callbacks = [early_stopping], epochs = num_epochs, shuffle=False)
+        batch_size= batch_size, callbacks = [early_stopping], epochs = num_epochs, shuffle=True)
         model.save(model_name)
         p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict([test_imgs, test_p_imgs])
         results = np.zeros((test_imgs.shape[0], 2), dtype = 'float32')
+        test_rt = test_pose_rt
+        test_tx = test_pose_tx
         for i in range(0, test_imgs.shape[0]):
             q2 = p_rx_3[i,:] / np.linalg.norm(p_rx_3[i,:])
             q1 = test_pose_rt[i, :] / np.linalg.norm(test_pose_rt[i,:])
