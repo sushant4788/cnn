@@ -229,6 +229,12 @@ def main():
     train_pose_rt = np.reshape(train_pose_rt, (-1, sequence_length, 4))
     train_pose_tx = np.reshape(train_pose_tx, (-1, sequence_length, 3))
     print(train_imgs.shape)
+    test_imgs = test_imgs[:3297, :,:,:]
+    test_p_imgs = test_p_imgs[:3297, :,:,:]
+    test_pose_rt = test_pose_rt[:3297,:]
+    test_pose_tx = test_pose_tx[:3297,:]
+    print(test_imgs.shape[0])
+	
     # Sanity check
     #img = train_imgs[23,5,:,:,0]
     #print(img.shape)
@@ -243,7 +249,9 @@ def main():
     sgd = optimizers.SGD(lr = learning_rate, momentum = 0.9, decay = 1e-6)
 
     # Compile the model
-    model.compile(optimizer=sgd, loss='mse', loss_weights = l_weights)
+
+    # model.compile(optimizer=sgd, loss='mse', loss_weights = l_weights)
+    model.compile(optimizer='rmsprop', loss= 'mse', loss_weights = l_weights)
 
     #Callbacks
 
@@ -274,10 +282,11 @@ def main():
     # save the model
     model.save(model_name)
 
-        # Get the prediction
-        # p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict([test_imgs, test_p_imgs])
-
-        # Get the pose predictions by adding i, j in loop over the first two indices
+    # Get the predictions 
+    p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict([test_imgs, test_p_imgs])
+    
+    # Get the errors
+    get_pose_errors(p_tx_3, p_rx_3, test_pose_tx, test_pose_rt)
 
 
 
