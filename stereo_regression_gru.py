@@ -188,6 +188,28 @@ def stereo_inception_gru(sequence_length = 7, img_rows= 224, img_cols=224, img_c
     model.summary()
     return(model)
 
+def get_pose_errors(p_tx_3, p_rx_3, test_pose_tx, test_pose_rt):
+    '''Calculate the median error of the translation and rotation error'''
+    total_samples = p_tx_3.shape[0] * p_tx_3.shape[1]
+    results = np.zeros((total_samples ,2), dtype='float32')
+    count =0
+    for i in range(0, p_tx_3.shape[0]):
+        for j in range(0, p_tx_3.shape[1]):
+            q2 = p_rx_3[i, j, :]/ np.linalg.norm(p_rx_3[i, j, :])
+            q1 = test_pose_rt[i,j,:]/ np.linalg.norm(test_pose_rt[i,j,:])
+            d = abs(np.sum(np.multiply(q1, q2)))
+            theta = 2*np.arccos(d) * 180/math.pi
+            error_x = np.linalg.norm(test_pose_tx[i,j, :] - p_tx_3[i,j, :])
+            results[count, :] = [error_x, theta]
+            print ('Iteration:  ', count, '  Error XYZ (m):  ', error_x, '  Error Q (degrees):  ', theta)
+            count = count +1
+    median_result = np.median(results,axis=0)
+    print('Median error meters: ', median_result[0])
+    print('Median error degrees: ', median_result[1])
+    np.savetxt('stereo_regression_predictions.txt', results, delimiter=' ')
+    print( 'Success!')
+    K.clear_session()
+
 def main():
 
     img_rows, img_cols, img_channels = 224, 224 ,1
