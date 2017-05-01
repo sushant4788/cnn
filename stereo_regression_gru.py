@@ -26,7 +26,7 @@ chpts_dir ='./stereo_gru_checkpoints/'
 learning_rate = 0.000001
 l_weights = [0.25, 125, 0.5, 250, 1.0, 500.0]
 num_epochs = 75
-batch_size = 10
+batch_size = 7
 use_gpu = True
 
 def get_device_id(use_gpu):
@@ -83,7 +83,7 @@ def base_features(img_input):
     kernel_initializer = RandomNormal(mean=0.0, stddev=0.015), kernel_regularizer=regularizers.l2(0.01),
     use_bias = True))(x)
     x = TimeDistributed(MaxPooling2D((3,3), strides=(2,2)))(x)
-    x = TimeDistributed(BatchNormalization())(x)
+    # x = TimeDistributed(BatchNormalization())(x)
     #x = TimeDistributed(BatchNormalization(mode=2))(x)
 
     x = TimeDistributed(Conv2D(64,(1,1), activation='relu',
@@ -91,7 +91,7 @@ def base_features(img_input):
     x = TimeDistributed(ZeroPadding2D((2,2)))(x)
     x = TimeDistributed(Conv2D(192, (3, 3), activation= 'relu',
     kernel_initializer = RandomNormal(mean=0.0, stddev = 0.02), use_bias = True, kernel_regularizer=regularizers.l2(0.01)))(x)
-    x = TimeDistributed(BatchNormalization())(x)
+    # x = TimeDistributed(BatchNormalization())(x)
     return(x)
 
 def time_dist_inception(input_img, t0_f0=64, t1_f0=96, t1_f1=128, t2_f0=16,t2_f1=32, t3_f1=32):
@@ -146,7 +146,7 @@ def stereo_inception_gru(sequence_length = 7, img_rows= 224, img_cols=224, img_c
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01)))(y)
     y = Reshape((sequence_length, -1))(y)
     y = GRU(1024, return_sequences = True,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = TimeDistributed(Dropout(0.5))(y)
+    #y = TimeDistributed(Dropout(0.5))(y)
     tx_1 = TimeDistributed(Dense(3, name='tx_1', use_bias = True, kernel_initializer=
     RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01)))(y)
     rx_1 = TimeDistributed(Dense(4, name='rx_1', use_bias = True, kernel_initializer=
@@ -162,7 +162,7 @@ def stereo_inception_gru(sequence_length = 7, img_rows= 224, img_cols=224, img_c
     kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01)))(y)
     y = Reshape((sequence_length, -1))(y)
     y = GRU(1024, return_sequences = True,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = TimeDistributed(Dropout(0.5))(y)
+    #y = TimeDistributed(Dropout(0.5))(y)
     tx_2 = TimeDistributed(Dense(3, name='tx_2', use_bias = True, kernel_initializer=
     RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01)))(y)
     rx_2 = TimeDistributed(Dense(4, name='rx_2', use_bias = True, kernel_initializer=
@@ -177,7 +177,7 @@ def stereo_inception_gru(sequence_length = 7, img_rows= 224, img_cols=224, img_c
     y = TimeDistributed(AveragePooling2D(pool_size=(5,5), strides = (3,3)))(op3)
     y = Reshape((sequence_length, -1))(y)
     y = GRU(2048, return_sequences = True,kernel_initializer = 'glorot_normal', kernel_regularizer=regularizers.l2(0.01))(y)
-    y = TimeDistributed(Dropout(0.5))(y)
+    #y = TimeDistributed(Dropout(0.5))(y)
     tx_3 = TimeDistributed(Dense(3, name='tx_3', use_bias = True, kernel_initializer=
     RandomNormal(mean=0.0, stddev=0.5), kernel_regularizer=regularizers.l2(0.01)))(y)
     rx_3 = TimeDistributed(Dense(4, name='rx_3', use_bias = True, kernel_initializer=
@@ -234,7 +234,7 @@ def main():
     # Model Check point
     checkpoint = ModelCheckpoint(filepath=chpts_dir + 'checkpoint-{epoch:02d}-{val_loss:.2f}.hdf5')
 
-    callback_list = [early_stopping, tb, checkpoint]
+    callback_list = [early_stopping, tb] #, checkpoint]
 
     # Get the model name
     model_name = get_model_name()
@@ -243,14 +243,14 @@ def main():
     device = get_device_id(use_gpu)
 
     # Fit the model
-    with tf.device(device):
+    #with tf.device(device):
 
-        # Fit the trainset to teh model
-        model.fit([train_imgs, train_p_imgs], [train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt],
-        batch_size = batch_size, callbacks= callback_list, epochs = num_epochs, shuffle = False, validation_split = 0.1)
+    # Fit the trainset to teh model
+    model.fit([train_imgs, train_p_imgs], [train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt, train_pose_tx, train_pose_rt],
+    batch_size = batch_size, callbacks= callback_list, epochs = num_epochs, shuffle = False)
 
-        # save the model
-        model.save(model_name)
+    # save the model
+    model.save(model_name)
 
         # Get the prediction
         # p_tx_1, p_rx_1, p_tx_2, p_rx_2, p_tx_3, p_rx_3 = model.predict([test_imgs, test_p_imgs])
